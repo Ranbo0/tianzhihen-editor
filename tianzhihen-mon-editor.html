@@ -1,0 +1,3046 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>天之痕 mon.dat 编辑器 v5</title>
+<style>
+:root{--bg:#1a1a2e;--s1:#16213e;--s2:#0f3460;--ac:#e94560;--ac2:#533483;--tx:#eee;--tx2:#aab;--ok:#4caf50;--warn:#ff9800;--brd:#2a2a4a}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,"Microsoft YaHei","PingFang SC",sans-serif;background:var(--bg);color:var(--tx);min-height:100vh}
+.hdr{background:linear-gradient(135deg,var(--s1),var(--s2));padding:16px 24px;border-bottom:2px solid var(--ac);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.hdr h1{font-size:20px;color:var(--ac)}.hdr .sub{color:var(--tx2);font-size:12px;margin-top:2px}
+.toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.btn{padding:7px 16px;border:1px solid var(--brd);border-radius:6px;background:var(--s2);color:var(--tx);cursor:pointer;font-size:13px;transition:.2s}
+.btn:hover{background:var(--ac);border-color:var(--ac)}.btn.pri{background:var(--ac);border-color:var(--ac)}.btn.pri:hover{background:#c73550}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.dirty:not(:disabled){background:var(--warn);border-color:var(--warn);color:#1a1a2e;font-weight:600;box-shadow:0 0 0 0 rgba(255,152,0,.6);animation:dirtyPulse 1.6s infinite}
+.btn.dirty:not(:disabled):hover{background:#ffa726;border-color:#ffa726}
+@keyframes dirtyPulse{0%{box-shadow:0 0 0 0 rgba(255,152,0,.7)}70%{box-shadow:0 0 0 8px rgba(255,152,0,0)}100%{box-shadow:0 0 0 0 rgba(255,152,0,0)}}
+.container{padding:16px 24px}
+.stats{display:flex;gap:16px;margin-bottom:12px;font-size:12px;color:var(--tx2);flex-wrap:wrap}
+.stats span{background:var(--s1);padding:3px 10px;border-radius:4px}.stats .c{color:var(--ac);font-weight:bold}
+.filt{display:flex;gap:10px;margin-bottom:12px;align-items:center;flex-wrap:wrap}
+.filt input,.filt select{padding:7px 10px;border:1px solid var(--brd);border-radius:6px;background:var(--s1);color:var(--tx);font-size:13px;outline:0}
+.filt input:focus,.filt select:focus{border-color:var(--ac)}.filt input{flex:1;min-width:180px}
+.tw{overflow-x:auto;border:1px solid var(--brd);border-radius:8px;background:var(--s1)}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead th{background:var(--s2);padding:8px 10px;text-align:left;border-bottom:2px solid var(--brd);position:sticky;top:0;white-space:nowrap;cursor:pointer;user-select:none;font-size:12px}
+thead th:hover{background:var(--ac2)}
+tbody tr{border-bottom:1px solid var(--brd);cursor:pointer;transition:.15s}
+tbody tr:hover{background:rgba(233,69,96,.1)}tbody tr.sel{background:rgba(233,69,96,.2)}
+tbody td{padding:7px 10px;white-space:nowrap}
+td.nm{font-weight:bold;color:#fff}td.num{text-align:right;font-family:"SF Mono",Consolas,monospace;font-size:12px}
+.badge{display:inline-block;padding:1px 7px;border-radius:3px;font-size:10px;font-weight:bold}
+.badge.c{background:var(--ac);color:#fff}.badge.i{background:var(--ac2);color:#fff}.badge.e{background:#00897b;color:#fff}
+.mod{color:var(--warn)!important}
+.pag{display:flex;gap:8px;justify-content:center;margin-top:12px;align-items:center}
+.pag button{padding:5px 10px;font-size:12px}.pag .pi{color:var(--tx2);font-size:13px}
+.mo{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.7);z-index:100;justify-content:center;align-items:center}
+.mo.act{display:flex}
+.md{background:var(--s1);border:1px solid var(--brd);border-radius:12px;padding:20px;min-width:560px;max-width:800px;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.md h2{font-size:17px;margin-bottom:4px;color:var(--ac)}.md .ms{font-size:11px;color:var(--tx2);margin-bottom:16px}
+.fg{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.fg>div{display:flex;flex-direction:column;gap:3px}
+.fg label{font-size:10px;color:var(--tx2);font-weight:bold}
+.fg input{padding:6px 8px;border:1px solid var(--brd);border-radius:6px;background:var(--bg);color:var(--tx);font-size:13px;font-family:"SF Mono",Consolas,monospace}
+.fg input:focus{border-color:var(--ac);outline:0}.fg input.ch{border-color:var(--warn);background:rgba(255,152,0,.1)}
+.ds{margin-top:14px;padding-top:14px;border-top:1px solid var(--brd)}
+.ds h3{font-size:13px;color:var(--tx2);margin-bottom:6px}.ds .dt{font-size:12px;line-height:1.6;color:var(--tx)}
+.es{margin-top:14px;padding-top:14px;border-top:1px solid var(--brd)}
+.es h3{font-size:13px;color:var(--tx2);margin-bottom:6px}
+.eg{display:grid;grid-template-columns:repeat(auto-fill,minmax(95px,1fr));gap:5px}
+.ei{background:var(--bg);border:1px solid var(--brd);border-radius:4px;padding:5px 6px;font-size:10px;text-align:center;cursor:pointer}
+.ei:hover{border-color:var(--ac)}.ei .ev{font-family:"SF Mono",Consolas,monospace;font-size:12px;color:var(--ac)}
+.ei .el{color:var(--tx2);font-size:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ei.hl{border-color:var(--warn)}.ei.hl .ev{color:var(--warn)}
+.ei.key{border-color:#4fc3f7;background:rgba(79,195,247,.08)}.ei.key .ev{color:#4fc3f7;font-weight:bold}
+.ma{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+.toast{position:fixed;bottom:16px;right:16px;padding:10px 18px;background:var(--ok);color:#fff;border-radius:8px;font-size:12px;z-index:200;opacity:0;transition:.3s;pointer-events:none}
+.toast.show{opacity:1}.toast.err{background:var(--ac)}
+.section-label{grid-column:1/-1;font-size:11px;color:var(--tx2);margin-top:6px;font-weight:bold;border-bottom:1px solid var(--brd);padding-bottom:3px}
+.map-desc{margin-top:12px;padding:10px;background:rgba(79,195,247,.08);border:1px solid rgba(79,195,247,.3);border-radius:6px}
+.map-desc .label{font-size:11px;color:#4fc3f7;font-weight:bold;margin-bottom:4px}
+.map-desc .text{font-size:13px;color:#eee}
+.effect-summary{margin-top:10px;padding:10px;background:rgba(76,175,80,.08);border:1px solid rgba(76,175,80,.3);border-radius:6px;font-size:13px;line-height:1.6}
+.effect-summary .title{font-size:11px;color:var(--ok);font-weight:bold;margin-bottom:4px}
+.elem-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:8px}
+.elem-item{background:var(--bg);border:1px solid var(--brd);border-radius:4px;padding:6px;text-align:center;font-size:12px}
+.elem-item .name{color:var(--tx2);font-size:10px}.elem-item .val{font-weight:bold;font-family:"SF Mono",Consolas,monospace}
+.elem-item .val.pos{color:var(--ok)}.elem-item .val.neg{color:var(--ac)}
+.tabBar{margin-top:4px}.tabBtn{padding:8px 18px;border:none;border-bottom:3px solid transparent;background:transparent;color:var(--tx2);font-size:13px;cursor:pointer;transition:.2s}
+.tabBtn:hover{color:var(--tx)}.tabBtn.active{color:var(--ac);border-bottom-color:var(--ac);font-weight:600}
+.tbl{width:100%;border-collapse:collapse;font-size:12px}.tbl th,.tbl td{padding:5px 8px;border-bottom:1px solid var(--brd);text-align:center}.tbl th{background:var(--s2);position:sticky;top:0;font-size:11px;color:var(--tx2)}
+.tbl td input[type=number]{width:58px;padding:2px 4px;border:1px solid var(--brd);border-radius:3px;background:var(--bg);color:var(--tx);font-size:11px;text-align:right;font-family:"SF Mono",Consolas,monospace}
+.tbl td input[type=number]:focus{border-color:var(--ac);outline:0}
+</style>
+</head>
+<body>
+<div class="hdr">
+<div><h1>轩辕剑·天之痕 mon.dat 编辑器 v5</h1><div class="sub">活物(过滤无效) / 物品(多效果) / 装备(五行属性) / maps.dat说明</div></div>
+<div class="toolbar">
+<button class="btn pri" id="fi">加载 mon.dat</button>
+<button class="btn" id="fi2">加载 maps.dat</button>
+<button class="btn" id="fi3">加载 level.dat</button>
+<button class="btn" id="fiDir" style="background:#00897b;border-color:#00897b;color:#fff">加载目录</button>
+<button class="btn" id="bs" disabled>保存 mon.dat</button><button class="btn" id="bsm" disabled>保存 maps.dat</button><button class="btn" id="bsl" disabled>保存 level.dat</button><button class="btn" id="be" disabled>导出 JSON</button>
+<label style="display:inline-flex;align-items:center;gap:4px;font-size:12px;color:var(--tx2);margin-left:6px;cursor:pointer"><input type="checkbox" id="bkup" checked> 保存前备份(下载到下载目录)</label>
+<span style="margin-left:auto;font-size:11px;color:var(--tx2);opacity:0.7" title="构建时间，用于确认页面是否为最新版本">build 2026-06-20-r33 (directory loading)</span>
+</div></div>
+<div class="tabBar" style="display:flex;gap:0;border-bottom:2px solid var(--brd);margin:0 12px">
+<button class="tabBtn active" id="tabMon">mon.dat 数据</button>
+<button class="tabBtn" id="tabLevel">level.dat 升级表</button>
+</div>
+<div class="container" id="panelMon">
+<div class="stats"><span>活物: <span class="c" id="cc">0</span></span><span>物品: <span class="c" id="ic">0</span></span><span>装备: <span class="c" id="ec">0</span></span><span>已修改: <span class="c" id="mc">0</span></span></div>
+<div class="filt">
+<input type="text" id="si" placeholder="搜索名称...">
+<select id="tf">
+<option value="all">全部</option>
+<option value="creature">活物 (1-500)</option>
+<option value="recovery">回复物品 (3001-3024)</option>
+<option value="debuffRemoval">解除debuff (3025-3034)</option>
+<option value="statIncrease">增加上限 (3035-3044)</option>
+<option value="special">特殊物品 (3045-3047)</option>
+<option value="buffDebuff">增强/削弱 (3048-3072)</option>
+<option value="magicTreasure">法宝 (3151-3184)</option>
+<option value="weapon">武器 (3201-3256)</option>
+<option value="thrown">投掷 (3257-3267)</option>
+<option value="armor">防具饰品 (3271-3398)</option>
+<option value="skill">奇术/技能 (6001+)</option>
+</select>
+<select id="sf"><option value="id">按编号</option><option value="name">按名称</option><option value="level">按等级</option><option value="code">按代码</option></select><button id="sfDir" class="btn" style="margin-left:2px;min-width:28px;padding:2px 6px;font-size:13px" title="切换升序/降序">↓</button>
+<button class="btn" id="batchBtn" disabled style="margin-left:8px">批量修改</button>
+</div>
+<div class="tw"><table><thead id="thead"></thead><tbody id="tb"></tbody></table></div>
+<div class="pag"><select id="ps" style="padding:5px 8px;border:1px solid var(--brd);border-radius:6px;background:var(--s1);color:var(--tx);font-size:12px"><option value="25">25条/页</option><option value="50" selected>50条/页</option><option value="100">100条/页</option><option value="200">200条/页</option></select><button class="btn" id="bp" disabled>上一页</button><span class="pi" id="pi">-</span><button class="btn" id="bn" disabled>下一页</button></div>
+</div>
+<div class="container" id="panelLevel" style="display:none">
+<div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center" id="levelCharTabs"></div>
+<div style="overflow-x:auto"><table class="tbl" id="levelTable" style="font-size:12px"><thead><tr>
+<th>等级</th><th>生命</th><th>灵力</th><th>体力</th><th>力量</th><th>耐力</th><th>智力</th><th>敏捷</th><th>减益抗性</th><th>增益时长</th><th>升级经验</th><th>习得奇术</th>
+</tr></thead><tbody id="levelTbody"></tbody></table></div>
+<div style="margin-top:10px"><button class="btn pri" id="levelSave">暂存改动</button><span style="margin-left:12px;font-size:12px;color:var(--tx2)" id="levelStatus">未加载 level.dat</span></div>
+</div>
+<div class="mo" id="em"><div class="md">
+<h2 id="mt">编辑</h2><div class="ms" id="msub"></div>
+<div class="fg" id="fgc"></div>
+<div class="effect-summary" id="effSummary" style="display:none"><div class="title">效果说明</div><div id="effSummaryText"></div></div>
+<div class="es" id="esec"><h3 id="esecTitle">效果数据 - 点击编辑</h3><div class="eg" id="egrd"></div></div>
+<div class="ds" id="dsec"><h3>描述</h3><div class="dt" id="dtxt"></div></div>
+<div class="map-desc" id="mapDescSec" style="display:none"><div class="label">maps.dat 效果说明</div><div class="text" id="mapDescText"></div></div>
+<div class="ma"><button class="btn" id="bmc">取消</button><button class="btn" id="bmr">重置</button><button class="btn pri" id="bms" title="把改动暂存到内存。真正写文件请点工具栏的「保存 mon.dat / maps.dat」">暂存改动</button></div>
+</div></div>
+<div class="mo" id="batchModal"><div class="md" style="max-width:560px">
+<h2 style="margin:0 0 12px;font-size:16px">批量修改已选活物</h2>
+<div style="display:grid;grid-template-columns:auto 1fr;gap:8px 12px;align-items:center;font-size:13px">
+  <label>修改字段</label>
+  <select id="batchField" style="padding:4px 6px;border:1px solid var(--brd);border-radius:4px;background:var(--bg);color:var(--tx)">
+    <option value="drop">掉落物品+几率</option>
+    <option value="steal">偷取物品+几率</option>
+    <option value="gold">金钱</option>
+  </select>
+  <label>模式</label>
+  <div id="batchModeBox">
+    <label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;font-size:12px"><input type="radio" name="batchMode" value="single" checked> 统一赋值</label>
+    <label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;font-size:12px;margin-left:10px"><input type="radio" name="batchMode" value="random"> 随机分配 (最多6项)</label>
+  </div>
+  <label>新值</label>
+  <div id="batchValueBox">
+    <div id="batchSingleBox">
+      <div id="batchItemSelBox" style="display:flex;flex-wrap:wrap;gap:4px;align-items:center">
+        <select id="batchItemCat" style="padding:4px;border:1px solid var(--brd);border-radius:4px;background:var(--bg);color:var(--tx);font-size:12px;max-width:110px"></select>
+        <select id="batchItemId" style="padding:4px;border:1px solid var(--brd);border-radius:4px;background:var(--bg);color:var(--tx);font-size:12px;max-width:220px"></select>
+        <span style="font-size:12px;color:var(--tx2);margin-left:4px">几率:</span>
+        <input type="number" id="batchProbVal" min="0" max="65535" value="100" style="width:70px;padding:4px;border:1px solid var(--brd);border-radius:4px;background:var(--bg);color:var(--tx);font-size:12px">
+        <span style="font-size:11px;color:var(--tx2)">/256</span>
+      </div>
+      <input type="number" id="batchNumVal" min="0" max="65535" value="0" style="display:none;width:120px;padding:4px;border:1px solid var(--brd);border-radius:4px;background:var(--bg);color:var(--tx)">
+    </div>
+    <div id="batchRandomBox" style="display:none">
+      <div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin-bottom:6px">
+        <select id="batchRndCat" style="padding:4px;border:1px solid var(--brd);border-radius:4px;background:var(--bg);color:var(--tx);font-size:12px;max-width:110px"></select>
+        <select id="batchRndItem" style="padding:4px;border:1px solid var(--brd);border-radius:4px;background:var(--bg);color:var(--tx);font-size:12px;max-width:180px"></select>
+        <span style="font-size:12px;color:var(--tx2)">几率:</span>
+        <input type="number" id="batchRndProb" min="0" max="65535" value="100" style="width:60px;padding:4px;border:1px solid var(--brd);border-radius:4px;background:var(--bg);color:var(--tx);font-size:12px">
+        <span style="font-size:11px;color:var(--tx2)">/256</span>
+        <button class="btn" id="batchRndAdd" style="padding:2px 8px;font-size:12px">添加</button>
+      </div>
+      <div id="batchRndList" style="font-size:12px;color:var(--tx);max-height:120px;overflow-y:auto"></div>
+      <div style="font-size:11px;color:var(--tx2);margin-top:4px">每个活物将从池中随机获得一项</div>
+    </div>
+  </div>
+</div>
+<div style="margin-top:12px;padding:8px;background:var(--bg2);border-radius:4px;font-size:12px;color:var(--tx2)" id="batchPreview">将影响 0 个已选活物</div>
+<div class="ma" style="margin-top:12px"><button class="btn" id="batchCancel">取消</button><button class="btn pri" id="batchApply">应用</button></div>
+</div></div>
+<div class="toast" id="toast"></div>
+<script>
+const D=new TextDecoder('big5');
+let FB=null,entries=[],mods={},cp=0;let PS=50;let FE=[],EE=null;let sortDir=1;
+let _itemNameMap={}; // code→name lookup for drop/steal resolution
+let _selected=new Set(); // selected creature IDs for batch operations
+let _batchPool=[]; // random item pool for batch: [{id,prob,name}]
+// maps.dat state
+// MB: raw ArrayBuffer of maps.dat
+// mapSegs: array of {start, end} byte offsets in original buffer (the segment is buffer[start..end), %Q follows except for last segment)
+// mapDescTexts: parallel array of decoded big5 strings (for display)
+// mapMods: object { segIdx -> new big5 byte array (Uint8Array) } for modifications
+// big5EncMap: lazy map: unicode codepoint -> 2-byte big5 code (built from decoder probing)
+let MB=null,mapSegs=[],mapDescTexts=[],mapMods={};
+let big5EncMap=null;
+// File handles for direct write-back via File System Access API (Chromium-based browsers).
+// fallback name preserved so error messages can mention the file by name.
+let monHandle=null,mapsHandle=null,levelHandle=null,monName='mon.dat',mapsName='maps.dat';
+const hasFSA=typeof window.showOpenFilePicker==='function';
+
+// Effect type names (consumable items)
+const EFF_TYPES={9:'力量',15:'耐力',16:'敏捷',17:'智慧',18:'耐力',19:'生命',20:'灵力',21:'体力',22:'力量',23:'敏捷'};
+const TARGET_TYPES={203:'单人',214:'全体',215:'单人',301:'单人(复活)',302:'全体(复活)'};
+
+function parseMaps(buf){
+  // Parse entire maps.dat into byte segments separated by %Q (0x25 0x51).
+  // Segments preserve exact original bytes; the %Q separators themselves are NOT stored.
+  // mapSegs[i] = {start, end} byte offsets into buf such that buf[start..end) is segment i.
+  const d=new Uint8Array(buf);
+  const segs=[];
+  const texts=[];
+  let cur=0;
+  for(let i=0;i<d.length-1;i++){
+    if(d[i]===0x25&&d[i+1]===0x51){
+      segs.push({start:cur,end:i});
+      const seg=d.slice(cur,i);
+      let t='';try{t=D.decode(seg).replace(/\x00/g,'')}catch(e){}
+      texts.push(t);
+      cur=i+2;
+      i++; // skip the 0x51 we just consumed
+    }
+  }
+  // Trailing segment after last %Q
+  segs.push({start:cur,end:d.length});
+  const seg=d.slice(cur,d.length);
+  let t='';try{t=D.decode(seg).replace(/\x00/g,'')}catch(e){}
+  texts.push(t);
+  return {segs,texts};
+}
+
+// Direct mapping: item code -> maps.dat segment index = code + 200
+// Verified for recovery (3001-3024 -> 3201-3224), weapons (3201-3256 -> 3401-3456),
+// thrown (3257-3267 -> 3457-3467), armor (3271-3398 -> 3471-3598).
+function getDescSegIdx(item){
+  if(!item||!item.itemCode)return -1;
+  return item.itemCode+200;
+}
+
+function getDescTextForItem(item){
+  if(!mapSegs.length)return null;
+  const idx=getDescSegIdx(item);
+  if(idx<0||idx>=mapDescTexts.length)return null;
+  // Apply pending modification first if any
+  if(mapMods[idx]){
+    try{return D.decode(mapMods[idx]).replace(/\x00/g,'')}catch(e){return mapDescTexts[idx]}
+  }
+  return mapDescTexts[idx];
+}
+
+// Build Unicode -> Big5 bytes lookup map by exhaustively decoding every valid Big5
+// codepoint (lead byte 0xA1..0xFE + trail 0x40..0x7E, 0xA1..0xFE) using the browser's
+// TextDecoder. We do this lazily on first encode call.
+function buildBig5EncMap(){
+  if(big5EncMap)return big5EncMap;
+  const m=new Map();
+  // ASCII passthrough (0x00..0x7F)
+  for(let c=0;c<0x80;c++)m.set(c,new Uint8Array([c]));
+  // Two-byte big5 range
+  const dec=new TextDecoder('big5',{fatal:false});
+  for(let lead=0xA1;lead<=0xFE;lead++){
+    for(let trail=0x40;trail<=0xFE;trail++){
+      if(trail>0x7E&&trail<0xA1)continue; // gap
+      const buf=new Uint8Array([lead,trail]);
+      let s='';
+      try{s=dec.decode(buf)}catch(e){continue}
+      if(!s||s.length===0)continue;
+      // Skip the U+FFFD replacement char
+      const cp=s.codePointAt(0);
+      if(cp===0xFFFD)continue;
+      // Only set first occurrence so canonical mapping wins
+      if(!m.has(cp))m.set(cp,new Uint8Array([lead,trail]));
+    }
+  }
+  big5EncMap=m;
+  return m;
+}
+
+function encodeBig5(str){
+  // Returns {ok, bytes, badChar}.
+  // ok=false when at least one char cannot be encoded; badChar is the first such char.
+  const m=buildBig5EncMap();
+  const out=[];
+  for(const ch of str){
+    const cp=ch.codePointAt(0);
+    const b=m.get(cp);
+    if(!b){
+      // Try common simplified->traditional fallback for a few characters?
+      // For now just fail on unmappable
+      return {ok:false,bytes:null,badChar:ch};
+    }
+    for(const x of b)out.push(x);
+  }
+  return {ok:true,bytes:new Uint8Array(out),badChar:null};
+}
+
+// Parse D0 07 block at byte level according to correct structure
+function parseD007Block(raw){
+  if(!raw||raw.length<37)return null;
+  
+  const result={
+    level:0,category:0,whoCanUse:0,price:0,
+    effects:[],hasPct:false,target:null,targetCode:0
+  };
+  
+  // Header (0-8, 9 bytes)
+  // Level (9-10, 2 bytes)
+  result.level=raw[9]|(raw[10]<<8);
+  // Category (11-12, 2 bytes)
+  result.category=raw[11]|(raw[12]<<8);
+  // Marker 0E 00 (13-14, 2 bytes)
+  // Image (15-31, 17 bytes)
+  // Who can use (32, 1 byte)
+  result.whoCanUse=raw[32];
+  // Separator (33-34, 2 bytes)
+  // Price (35-36, 2 bytes)
+  result.price=raw[35]|(raw[36]<<8);
+  
+  // Effects start at offset 37
+  // Parse until reaching the end of the block (last 2 bytes are 1E 00 block terminator)
+  // Use off+3<raw.length to allow parsing effects that end at raw.length-4 to raw.length-1
+  let off=37;
+  while(off+3<raw.length){
+    // Check for percentage indicator (1B 00 00 02) - set flag but continue parsing
+    if(off+3<raw.length&&raw[off]===0x1B&&raw[off+1]===0x00&&raw[off+2]===0x00&&raw[off+3]===0x02){
+      result.hasPct=true;
+      off+=4;
+      continue;
+    }
+    // Check for 64 00 marker - parse use target but continue parsing
+    if(off+1<raw.length&&raw[off]===0x64&&raw[off+1]===0x00){
+      off+=2;
+      // Use target (2 bytes)
+      if(off+1<raw.length){
+        result.targetCode=raw[off]|(raw[off+1]<<8);
+        const targetMap={0xCB:'存活单体',0xD6:'存活全体',0x012D:'单体死亡角色',0x012E:'任意单体'};
+        result.target=targetMap[result.targetCode]||null;
+        off+=2;
+      }
+      continue;
+    }
+    // Parse effect (2 bytes type + 2 bytes value)
+    // Do NOT check for 1E 00 here as it can be part of effect values (e.g., 0x001E = 30)
+    if(off+3<raw.length){
+      const etype=raw[off]|(raw[off+1]<<8);
+      const evalue=raw[off+2]|(raw[off+3]<<8);
+      // Only include valid effect types
+      const validTypes=[9,15,16,17,18,19,20,21,22,23];
+      if(validTypes.includes(etype)){
+        result.effects.push({type:etype,value:evalue,off:off});
+      }
+      off+=4;
+    }else{
+      break;
+    }
+  }
+  
+  return result;
+}
+
+function parseEffects(eff,itemCode){
+  const effects=[];let target=null;
+  // Determine item category by code range
+  const isRecovery=itemCode>=3001&&itemCode<=3024;
+  const isDebuffRemoval=itemCode>=3025&&itemCode<=3034;
+  const isStatIncrease=itemCode>=3035&&itemCode<=3044;
+  const isBuffDebuff=(itemCode>=3048&&itemCode<=3062)||(itemCode>=3064&&itemCode<=3072);
+  const isSpecialRecovery=itemCode===3089;
+  const isMagicTreasure=itemCode>=3151&&itemCode<=3184;
+  const isWeapon=itemCode>=3201&&itemCode<=3256;
+  const isThrown=itemCode>=3257&&itemCode<=3267;
+  const isArmor=itemCode>=3271&&itemCode<=3398;
+  
+  // 上限 only applies to stat increase items (3035-3044)
+  const hasMax=isStatIncrease;
+  
+  let i=14;
+  let foundTarget=false;
+  while(i<eff.length){
+    const v=eff[i];
+    
+    // For recovery items, stop parsing main effects after finding target type
+    if(isRecovery&&foundTarget){
+      break;
+    }
+    
+    // Effect types for recovery and stat increase
+    if((v>=9&&v<=23&&v!==27)||(isRecovery&&v>=19&&v<=21)){
+      if(i+1<eff.length){
+        effects.push({type:v,value:eff[i+1],isMax:hasMax});
+        i+=2;
+      }else break;
+    }else if(v===27){
+      // Type 27 is a marker, skip
+      i++;
+    }else if(v===512){
+      // Type 512 is a marker, skip (not always 解除所有状态)
+      i++;
+    }else if(v===203){target='单人';foundTarget=true;i++;
+    }else if(v===214){target='全体';foundTarget=true;i++;
+    }else if(v===301){target='单人(复活)';foundTarget=true;i++;
+    }else if(v===302){target='全体(复活)';foundTarget=true;i++;
+    }else if(v>=303&&v<=310){target=`解除状态(${v})`;foundTarget=true;i++;
+    }else if(v===100||v===0||v===256||v===30){
+      // Skip marker values
+      i++;
+    }else if(v>1000){
+      // Skip large values (prices, codes)
+      i++;
+    }else{
+      i++;
+    }
+  }
+  return {effects,target,hasMax};
+}
+
+// Equipment stat types (from D0 07 eff data)
+const EQUIP_STAT_TYPES={7:'攻击',8:'防御',9:'力量',10:'体力',12:'敏捷',13:'暴击',22:'特效'};
+
+// Weapon stat types (byte-level parsing).
+const WEAPON_STAT_TYPES={7:'攻击',8:'防御',9:'敏捷',10:'体力',11:'价格',12:'额外伤害',13:'熟练经验',22:'特效'};
+
+// Armor/accessories (3271-3398) share the same offset-33 stat layout but use
+// type codes 0x13/0x14/0x15 (decimal 19/20/21) for regen/cap effects:
+//   - default mode: 0x13=每回合回复生命%, 0x14=每回合回复灵力%, 0x15=每回合回复体力%
+//   - if a 1B 00 00 01 trailer appears at the end of the stat block, those
+//     same types instead mean 生命上限/灵力上限/体力上限 (装备时加属性).
+// NOTE: the keys below are decoded LE16 values, NOT raw byte hex digits.
+const ARMOR_STAT_TYPES_REGEN={7:'攻击',8:'防御',9:'敏捷',10:'体力',11:'价格',12:'额外伤害',13:'熟练经验',19:'每回合回复生命%',20:'每回合回复灵力%',21:'每回合回复体力%',22:'特效'};
+const ARMOR_STAT_TYPES_BOOST={7:'攻击',8:'防御',9:'敏捷',10:'体力',11:'价格',12:'额外伤害',13:'熟练经验',19:'生命上限',20:'灵力上限',21:'体力上限',22:'特效'};
+const ARMOR_TRAILER=[0x1B,0x00,0x00,0x01];
+
+// Element resistances live in offset 2..6 of the D0 07 block (1 signed byte each).
+// Weapons leave these zero; armor/accessories use them for 金/木/水/火/土 resistances.
+const ELEMENT_NAMES=['金','木','水','火','土'];
+
+function parseElements(raw){
+  if(!raw||raw.length<7)return [0,0,0,0,0];
+  const r=[];
+  for(let i=0;i<5;i++){
+    const b=raw[2+i];
+    r.push(b>127?b-256:b); // signed 8-bit
+  }
+  return r;
+}
+
+function parseWeaponStats(raw,isArmor){
+  if(!raw||raw.length<33)return null;
+  const stats=[];
+  const level=raw[9]|(raw[10]<<8);
+  const category=raw[11]|(raw[12]<<8);
+  const whoCanEquip=raw[32];
+  const whoMap={0x10:'张烈',0x20:'玉儿',0x40:'小雪',0x60:'女性',0x80:'靖仇',0x90:'男性',0xF0:'所有人'};
+  const whoStr=whoMap[whoCanEquip]||'未知';
+  const elements=parseElements(raw);
+
+  // Stat list lives between offset 33 and the trailing 1E 00.
+  // For armor, scan once to detect the 1B 00 00 01 mode-flip trailer anywhere
+  // in the stat region; if found, types 13/14/15 mean 生命/灵力/体力上限 instead
+  // of every-turn regen-percent. We also need to skip those 4 trailer bytes
+  // when walking effects so they're not parsed as a 1B 00 (=27) stat.
+  const stop=raw.length-2; // exclude trailing 1E 00
+  let hasArmorTrailer=false;
+  if(isArmor){
+    for(let k=33;k+3<=stop;k+=4){
+      if(raw[k]===ARMOR_TRAILER[0]&&raw[k+1]===ARMOR_TRAILER[1]&&raw[k+2]===ARMOR_TRAILER[2]&&raw[k+3]===ARMOR_TRAILER[3]){
+        hasArmorTrailer=true;
+        break;
+      }
+    }
+  }
+  const types=isArmor?(hasArmorTrailer?ARMOR_STAT_TYPES_BOOST:ARMOR_STAT_TYPES_REGEN):WEAPON_STAT_TYPES;
+
+  // Parse effects starting at offset 33
+  let off=33;
+  while(off+3<raw.length){
+    // Skip the armor trailer marker without recording it as a stat
+    if(isArmor&&raw[off]===ARMOR_TRAILER[0]&&raw[off+1]===ARMOR_TRAILER[1]&&raw[off+2]===ARMOR_TRAILER[2]&&raw[off+3]===ARMOR_TRAILER[3]){
+      off+=4;
+      continue;
+    }
+    const type=raw[off]|(raw[off+1]<<8);
+    const val=raw[off+2]|(raw[off+3]<<8);
+    if(type in types){
+      const signed=val>32767?val-65536:val;
+      stats.push({type:types[type],value:signed,raw:val,typeCode:type});
+      off+=4;
+    }else{
+      // Type not in current type table, end of effects
+      break;
+    }
+  }
+  return {level,category,whoCanEquip,whoStr,elements,stats,hasArmorTrailer:!!hasArmorTrailer};
+}
+
+function parseEquipStats(eff){
+  if(!eff||eff.length<16)return null;
+  const stats=[];let i=14; // Start at first effect type (offset 37-38)
+  while(i<eff.length-1){
+    const type=eff[i];const val=eff[i+1];
+    if(type in EQUIP_STAT_TYPES){
+      const signed=val>32767?val-65536:val;
+      stats.push({type:EQUIP_STAT_TYPES[type],value:signed,raw:val,typeCode:type});
+      i+=2;
+    }else if(type===2||type===3||type===30){
+      break;
+    }else{
+      i++;
+    }
+  }
+  return stats.length>0?stats:null;
+}
+
+function parse(buf){
+  const d=new Uint8Array(buf),v=new DataView(buf);
+  // Find all D0 07 blocks using 1E 00 as block terminator
+  const d007Blocks=[];
+  let pos=0;
+  while(pos<d.length-3){
+    if(d[pos]==0xD0&&d[pos+1]==0x07){
+      // Find 1E 00 as block terminator using 4-byte aligned scan starting at pos+33.
+      // Stat section starts at pos+33 (weapons) or pos+37 (recovery/magic-treasure), both 4-byte aligned w.r.t. pos+33.
+      // Each stat is 4 bytes (2B type + 2B value), so the real terminator must land on a type position (k - pos - 33) % 4 == 0.
+      // Old logic scanned byte-by-byte and rejected by "previous 4 bytes look like a valid type-value pair", which fails
+      // when a stat value is exactly 0x001E (e.g. 额外伤害=30 for 桃木劍/巨闕/赤龍牙/封雪刃/無空霸海) — the bytes 0C 00 1E 00
+      // form a valid (type=12, value=30) pair, so the 1E 00 starting the *next* stat type is mis-identified as the terminator,
+      // truncating 熟练经验/特效 etc. The aligned scan avoids this completely.
+      let e001=-1;
+      const scanEnd=Math.min(d.length-1,pos+300);
+      for(let k=pos+33;k<scanEnd;k+=4){
+        if(d[k]==0x1E&&d[k+1]==0x00){
+          e001=k;
+          break;
+        }
+      }
+      if(e001>=0){
+        const blen=e001+2-pos;const bd=d.slice(pos,e001+2);
+        const eff=[];for(let k=9;k+1<bd.length;k+=2)eff.push(v.getUint16(pos+k,true));
+        d007Blocks.push({offset:pos,blen,eff,raw:bd});
+        pos=e001+2;
+      }else pos+=2;
+    }else pos++;
+  }
+  // Find all names
+  const nms=[];pos=0;
+  while(pos<d.length-3){if(d[pos]==0x05&&d[pos+1]==0x00&&d[pos+2]==0xe8&&d[pos+3]==0x03){nms.push(pos);pos+=4}else pos++}
+  const dds=[];pos=0;while(pos<d.length-1){if(d[pos]==0x24&&d[pos+1]==0x24){dds.push(pos);pos+=2}else pos++}
+  const cdds=[];pos=0;while(pos<d.length-2){if(d[pos]==0x43&&d[pos+1]==0x24&&d[pos+2]==0x24){cdds.push(pos);pos+=3}else pos++}
+  
+  const r=[];
+  let _skillSeqCode=6001; // sequential skill counter (includes category headers)
+  for(let i=0;i<nms.length;i++){
+    const mk=nms[i],ns=mk+4;
+    // Find $$ (name terminator)
+    let d1=-1;for(const x of dds)if(x>=ns){d1=x;break}if(d1<0)continue;
+    const nb=d.slice(ns,d1);let name;try{name=D.decode(nb)}catch(e){name='?'}
+    
+    const afterDD=d1+2; // first byte after $$
+    if(afterDD+4>=d.length)continue;
+    
+    // Detect creature vs item: creatures do NOT start with D0 07 after $$,
+    // and have their code (1-500) at byte[2-3] of the creature data block.
+    const startsWithD007=(d[afterDD]===0xD0&&d[afterDD+1]===0x07);
+    const possibleCreatureCode=startsWithD007?0:v.getUint16(afterDD+2,true);
+    const isCreatureBlock=!startsWithD007&&possibleCreatureCode>=1&&possibleCreatureCode<=500;
+    
+    if(isCreatureBlock){
+      // ===== CREATURE PARSING =====
+      // Format: [unnamed LE16][代码 LE16][种类 LE16][等级 LE16][攻击 LE16][防御 LE16]
+      //         [敏捷 LE16][智慧 LE16][抗魔 LE16][打法 LE16][经验 LE16]
+      //         [生命 LE32][奇术1 LE32][奇术2 LE32][奇术3 LE32][特技1 LE32][特技2 LE32]
+      //         [回复1 LE32][回复2 LE32][掉落 LE32][偷取 LE32][金钱 LE32]
+      //         [25 middle bytes][体力消耗 1B][3 bytes][可放置 1B][谁可装备 1B]
+      //         [装备效果 ...][1E 00]
+      const cp=afterDD; // creature pointer
+      const itemCode=v.getUint16(cp+2,true);
+      const species=v.getUint16(cp+4,true);
+      const itemLevel=v.getUint16(cp+6,true);
+      const atk=v.getUint16(cp+8,true);
+      const def=v.getUint16(cp+10,true);
+      const agi=v.getUint16(cp+12,true);
+      const wis=v.getUint16(cp+14,true);
+      const magRes=v.getUint16(cp+16,true);
+      const tactic=v.getUint16(cp+18,true);
+      const exp=v.getUint16(cp+20,true);
+      const hp=v.getUint32(cp+22,true);
+      // LE32 skill/item fields: each is [ID LE16][param LE16]
+      const skill1={id:v.getUint16(cp+26,true),param:v.getUint16(cp+28,true)};
+      const skill2={id:v.getUint16(cp+30,true),param:v.getUint16(cp+32,true)};
+      const skill3={id:v.getUint16(cp+34,true),param:v.getUint16(cp+36,true)};
+      const spec1={id:v.getUint16(cp+38,true),param:v.getUint16(cp+40,true)};
+      const spec2={id:v.getUint16(cp+42,true),param:v.getUint16(cp+44,true)};
+      const recov1={id:v.getUint16(cp+46,true),param:v.getUint16(cp+48,true)};
+      const recov2={id:v.getUint16(cp+50,true),param:v.getUint16(cp+52,true)};
+      const drop={id:v.getUint16(cp+54,true),prob:v.getUint16(cp+56,true)};
+      const steal={id:v.getUint16(cp+58,true),prob:v.getUint16(cp+60,true)};
+      const gold=v.getUint32(cp+62,true);
+      
+      // Find 1E 00 terminator to get block length
+      // Start search from cp+97 (after 25 middle bytes + 体力 + 3B + 可放置 + 谁装备)
+      // because the middle bytes (cp+66..cp+90) can contain 1E 00 as data values.
+      let termOff=-1;
+      for(let k=cp+97;k<Math.min(cp+400,d.length-1);k++){
+        if(d[k]===0x1E&&d[k+1]===0x00){termOff=k;break}
+      }
+      const blockLen=termOff>=0?termOff+2-cp:0;
+      
+      // Parse equip effects section (starts at cp+97, ends before 1E 00)
+      let creatureEquipEffects=[];
+      let creatureHasTrailer=false;
+      const equipStart=cp+97;
+      const equipEnd=termOff>=0?termOff:cp+blockLen-2;
+      if(equipEnd>equipStart){
+        // Detect 1B 00 00 01 armor trailer
+        for(let k=equipStart;k+3<=equipEnd;k+=4){
+          if(d[k]===0x1B&&d[k+1]===0x00&&d[k+2]===0x00&&d[k+3]===0x01){
+            creatureHasTrailer=true;break;
+          }
+        }
+        const cTypes=creatureHasTrailer?ARMOR_STAT_TYPES_BOOST:ARMOR_STAT_TYPES_REGEN;
+        let eoff=equipStart;
+        while(eoff+3<=equipEnd){
+          if(d[eoff]===0x1B&&d[eoff+1]===0x00&&d[eoff+2]===0x00&&d[eoff+3]===0x01){eoff+=4;continue}
+          const stype=v.getUint16(eoff,true);
+          const sval=v.getUint16(eoff+2,true);
+          if(stype in cTypes){
+            const signed=sval>32767?sval-65536:sval;
+            creatureEquipEffects.push({type:stype,value:signed});
+            eoff+=4;
+          }else break;
+        }
+      }
+      
+      // Find description: text between the creature block's 1E 00 and the next $$
+      let desc='';
+      if(termOff>=0){
+        let dd=-1;
+        for(const x of dds){if(x>termOff+2){dd=x;break}}
+        if(dd>=0){
+          const sec=d.slice(termOff+2,dd);
+          try{desc=D.decode(sec)}catch(e){}
+        }
+      }
+      
+      // Store creature data in a pairs-compatible array for the table display
+      // pairs[0]=code,1=species,2=level,3=atk,4=def,5=agi,6=wis,7=magRes,8=tactic,9=exp,10=hp
+      const pairs=[itemCode,species,itemLevel,atk,def,agi,wis,magRes,tactic,exp,hp];
+      
+      const creatureData={
+        species,atk,def,agi,wis,magRes,tactic,exp,hp,
+        skills:[skill1,skill2,skill3],
+        specials:[spec1,spec2],
+        recoveries:[recov1,recov2],
+        drop,steal,gold,blockLen,
+        blockOffset:cp,
+        equipEffects:creatureEquipEffects,
+        hasTrailer:creatureHasTrailer
+      };
+      
+      r.push({id:i,name,desc,d007:null,itemCode,itemLevel,eff14:0,eff15:0,
+        effects:{effects:[],target:null,isPct:false},equipStats:null,
+        isCreature:true,isEquipment:false,category:'creature',
+        pairs,creature:creatureData});
+    }else if(startsWithD007){
+      // ===== ITEM/WEAPON/ARMOR PARSING =====
+      // Find the D0 07 block that starts right after $$
+      let myD007=null;
+      for(const blk of d007Blocks){if(blk.offset===afterDD){myD007=blk;break}}
+      // Fallback: find within 200 bytes (for rare cases)
+      if(!myD007){for(const blk of d007Blocks){if(blk.offset>d1&&blk.offset<d1+200){myD007=blk;break}}}
+      if(!myD007)continue;
+      
+      // Find description
+      let desc='';
+      const e001=myD007.offset+myD007.blen-2;
+      let dd=-1;
+      for(const x of dds){if(x>e001+2){dd=x;break}}
+      if(dd>=0){
+        const sec=d.slice(e001+2,dd);
+        try{desc=D.decode(sec)}catch(e){}
+      }
+      
+      let itemCode=0,itemLevel=0,eff14=0,eff15=0,effects={effects:[],target:null,isPct:false},equipStats=null;
+      let isEquipment=false;
+      
+      const e=myD007.eff;
+      // Detect skill D007 block: raw bytes [2..10] are all zero and byte[11] is 0x11 or 0x14
+      const isSkillBlock=myD007.raw.length>11&&myD007.raw[2]===0&&myD007.raw[3]===0&&myD007.raw[4]===0&&myD007.raw[5]===0&&myD007.raw[6]===0&&myD007.raw[7]===0&&myD007.raw[8]===0&&myD007.raw[9]===0&&myD007.raw[10]===0&&(myD007.raw[11]===0x11||myD007.raw[11]===0x14);
+      let skillData=null;
+      if(isSkillBlock){
+        itemCode=_skillSeqCode++;
+        itemLevel=0;
+        const _cw=myD007.raw[27]|(myD007.raw[28]<<8);
+        const _ct=(_cw>>12)&0xF,_cv=_cw&0xFFF;
+        const _sEffs=[];let _sPct=false;
+        let _so=29;
+        while(_so+3<myD007.raw.length){
+          const _st=myD007.raw[_so]|(myD007.raw[_so+1]<<8);
+          const _sv=myD007.raw[_so+2]|(myD007.raw[_so+3]<<8);
+          if(_st===0x1E)break;
+          if(_st===0x1B&&_sv===0x0200){_sPct=true}
+          else if(_st===0x13||_st===0x14||_st===0x15){_sEffs.push({type:_st,value:_sv,off:_so+2})}
+          _so+=4;
+        }
+        skillData={type:myD007.raw[11],target:myD007.raw[21]|(myD007.raw[22]<<8),costRaw:_cw,costType:_ct,costValue:_cv,effects:_sEffs,hasPct:_sPct};
+      }else{
+        itemCode=e[3]||0;itemLevel=e[0]||0;
+      }
+      
+      // Skip entries where itemCode accidentally falls in creature range (1-500)
+      // — these are junk/NPC-equip blocks misidentified by the old parser.
+      if(itemCode>=1&&itemCode<=500)continue;
+      
+      // Use byte-level parsing for recovery items (3001-3024, 3089) and stat increase items (3035-3044)
+      if(itemCode>=3001&&itemCode<=3024||itemCode===3089||itemCode>=3035&&itemCode<=3044){
+        const parsed=parseD007Block(myD007.raw);
+        if(parsed){
+          const _isMax=itemCode>=3035&&itemCode<=3044&&i!==472&&i!==476;
+          itemLevel=parsed.level;
+          effects={
+            effects:parsed.effects.map(ef=>({type:ef.type,value:ef.value,off:ef.off,isMax:_isMax,isPct:parsed.hasPct})),
+            target:parsed.target,
+            hasMax:_isMax,
+            price:parsed.price,
+            hasPct:parsed.hasPct
+          };
+        }
+      }else{
+        eff14=e[14]||0;eff15=e[15]||0;
+        effects=parseEffects(e,itemCode);
+        if(itemCode>=3201&&itemCode<=3256){
+          const weaponStats=parseWeaponStats(myD007.raw);
+          if(weaponStats&&weaponStats.stats&&weaponStats.stats.length>0){
+            equipStats=weaponStats.stats;
+            itemLevel=weaponStats.level;
+            isEquipment=true;
+          }else{
+            equipStats=parseEquipStats(e);
+            if(equipStats&&equipStats.length>0){isEquipment=true}
+          }
+        }else if(itemCode>=3271&&itemCode<=3398){
+          const armorStats=parseWeaponStats(myD007.raw,true);
+          if(armorStats&&armorStats.stats&&armorStats.stats.length>0){
+            equipStats=armorStats.stats;
+            itemLevel=armorStats.level;
+            isEquipment=true;
+            myD007.armorTrailer=armorStats.hasArmorTrailer;
+          }else{
+            equipStats=parseEquipStats(e);
+            if(equipStats&&equipStats.length>0){isEquipment=true}
+          }
+        }else{
+          equipStats=parseEquipStats(e);
+          if(equipStats&&equipStats.length>0){isEquipment=true}
+        }
+      }
+      
+      if(equipStats&&equipStats.length>0){isEquipment=true}
+      
+      // Determine category
+      let category='unknown';
+      if(isSkillBlock)category='skill';
+      else if(itemCode>=3001&&itemCode<=3024)category='recovery';
+      else if(itemCode>=3025&&itemCode<=3034)category='debuffRemoval';
+      else if(itemCode>=3035&&itemCode<=3044)category='statIncrease';
+      else if(itemCode>=3045&&itemCode<=3047)category='special';
+      else if(itemCode>=3048&&itemCode<=3072)category='buffDebuff';
+      else if(itemCode===3089)category='recovery';
+      else if(itemCode>=3151&&itemCode<=3184)category='magicTreasure';
+      else if(itemCode>=3201&&itemCode<=3256)category='weapon';
+      else if(itemCode>=3257&&itemCode<=3267)category='thrown';
+      else if(itemCode>=3271&&itemCode<=3398)category='armor';
+      // Override: entries 472 (三葉雪桑果) and 476 (活骨靈藥) are debuff removal, not stat increase
+      if(i===472||i===476)category='debuffRemoval';
+      
+      if(itemCode===0&&!isEquipment)continue;
+      
+      r.push({id:i,name,desc,d007:myD007,itemCode,itemLevel,eff14,eff15,effects,equipStats,
+        isCreature:false,isEquipment,category,pairs:myD007.eff,skillData});
+    }
+    // else: neither creature nor D007-item → skip silently
+  }
+  return r;
+}
+
+// Table header definitions per category group
+const WHO_MAP={0x10:'张烈',0x20:'玉儿',0x40:'小雪',0x60:'女性',0x80:'靖仇',0x90:'男性',0xF0:'所有人'};
+function _getHeaderGroup(tf){
+  if(tf==='all'||tf==='creature')return 'creature';
+  if(tf==='recovery')return 'recovery';
+  if(tf==='statIncrease')return 'statIncrease';
+  if(tf==='debuffRemoval'||tf==='special'||tf==='buffDebuff'||tf==='thrown')return 'consumable';
+  if(tf==='weapon')return 'weapon';
+  if(tf==='armor')return 'armor';
+  if(tf==='magicTreasure')return 'magicTreasure';
+  if(tf==='skill')return 'skill';
+  return 'creature';
+}
+function _buildThead(group){
+  const S='style="white-space:nowrap"';
+  switch(group){
+    case 'creature': return `<tr><th width="30"><input type="checkbox" id="selAll" title="全选/取消全选"></th><th width="45">#</th><th width="110">名称</th><th width="60">代码</th><th width="50">等级</th><th width="50">攻击</th><th width="50">防御</th><th width="50">敏捷</th><th width="50">智慧</th><th width="50">抗魔</th><th>HP</th><th>掉落</th><th>偷取</th><th>装备效果</th><th>说明</th></tr>`;
+    case 'recovery': return `<tr><th width="45">#</th><th width="130">名称</th><th width="60">代码</th><th width="50">等级</th><th>效果</th><th>说明</th></tr>`;
+    case 'statIncrease': return `<tr><th width="45">#</th><th width="130">名称</th><th width="60">代码</th><th width="50">等级</th><th>效果</th><th>说明</th></tr>`;
+    case 'consumable': return `<tr><th width="45">#</th><th width="130">名称</th><th width="60">代码</th><th width="50">等级</th><th>说明</th></tr>`;
+    case 'weapon': return `<tr><th width="45">#</th><th width="130">名称</th><th width="60">代码</th><th width="50">等级</th><th>装备属性</th><th width="70">谁装备</th><th>说明</th></tr>`;
+    case 'armor': return `<tr><th width="45">#</th><th width="130">名称</th><th width="60">代码</th><th width="50">等级</th><th width="35">金</th><th width="35">木</th><th width="35">水</th><th width="35">火</th><th width="35">土</th><th>装备属性</th><th width="70">谁装备</th><th>说明</th></tr>`;
+    case 'magicTreasure': return `<tr><th width="45">#</th><th width="130">名称</th><th width="60">代码</th><th width="50">等级</th><th width="60">体力消耗</th><th width="70">谁装备</th><th width="60">熟练度</th><th>说明</th></tr>`;
+    case 'skill': return `<tr><th width="45">#</th><th width="130">名称</th><th width="60">代码</th><th width="60">类型</th><th width="70">消耗类型</th><th width="70">消耗值</th><th>作用对象</th><th>效果</th><th>说明</th></tr>`;
+    default: return `<tr><th width="45">#</th><th width="130">名称</th><th width="60">代码</th><th>信息</th><th>说明</th></tr>`;
+  }
+}
+
+// Helper: build effect summary string for recovery/stat items
+function _buildEffectStr(e){
+  const _em=mods[e.id]||{};
+  if(!e.effects||!e.effects.effects||e.effects.effects.length===0)return '-';
+  const effs=e.effects.effects;
+  const tgt=e.effects.target||'';
+  const isStatIncrease=e.itemCode>=3035&&e.itemCode<=3044;
+  if(Object.keys(_em).some(k=>k.startsWith('recovType_')||k.startsWith('recovValue_'))){
+    const modifiedEffects=[];
+    for(let idx=0;idx<10;idx++){
+      if(_em[`recovType_${idx}`]!==undefined&&_em[`recovValue_${idx}`]!==undefined){
+        modifiedEffects.push({type:_em[`recovType_${idx}`],value:_em[`recovValue_${idx}`],isMax:isStatIncrease,isPct:e.effects.hasPct||false});
+      }
+    }
+    if(modifiedEffects.length>0){
+      return tgt+' '+modifiedEffects.map(ef=>{
+        const tn=EFF_TYPES[ef.type]||'?';
+        return tn+(ef.isMax?'上限':'')+'+'+ef.value+(ef.isPct?'%':'');
+      }).join(', ');
+    }
+  }
+  return tgt+' '+effs.map(ef=>{
+    const tn=EFF_TYPES[ef.type]||'?';
+    return tn+(ef.isMax?'上限':'')+'+'+ef.value+(ef.isPct?'%':'');
+  }).join(', ');
+}
+
+// Helper: build equip stats string (weapon/armor)
+function _buildEquipStatsStr(e){
+  const _em=mods[e.id]||{};
+  const _isWeapon=e.itemCode>=3201&&e.itemCode<=3256;
+  const _isArmor=e.itemCode>=3271&&e.itemCode<=3398;
+  if(_isWeapon&&Array.isArray(_em.weaponStats)){
+    if(_em.weaponStats.length===0)return '(无属性)';
+    return _em.weaponStats.map(s=>{const l=WEAPON_STAT_TYPES[s.type]||('?'+s.type);return l+(s.value>0?'+':'')+s.value}).join(', ');
+  }
+  if(_isArmor&&Array.isArray(_em.armorStats)){
+    if(_em.armorStats.length===0)return '(无属性)';
+    const trailerOn=(_em.armorTrailer!==undefined)?_em.armorTrailer:(e.d007&&e.d007.armorTrailer);
+    const tbl=trailerOn?ARMOR_STAT_TYPES_BOOST:ARMOR_STAT_TYPES_REGEN;
+    return _em.armorStats.map(s=>{const l=tbl[s.type]||('?'+s.type);return l+(s.value>0?'+':'')+s.value}).join(', ');
+  }
+  if(e.equipStats&&e.equipStats.length>0){
+    return e.equipStats.map(s=>s.type+(s.value>0?'+':'')+s.value).join(', ');
+  }
+  return '-';
+}
+
+let _lastHeaderGroup='';
+const _DS='min-width:300px;width:96%;padding:5px 6px;border:1px solid var(--brd);border-radius:3px;background:var(--bg);color:var(--tx);font-size:12px;font-family:-apple-system,"Microsoft YaHei","PingFang SC",sans-serif';
+function _mkDescCell(e){
+  if(!mapSegs.length||!e.itemCode)return '<td style="font-size:10px;color:var(--tx2)">-</td>';
+  const segIdx=e.itemCode+200;
+  if(segIdx<0||segIdx>=mapDescTexts.length)return '<td style="font-size:10px;color:var(--tx2)">-</td>';
+  const txt=getDescTextForItem(e)||'';
+  const isMod=mapMods[segIdx]!==undefined;
+  return `<td><input type="text" class="inlineDesc" data-eid="${e.id}" data-segidx="${segIdx}" value="${txt.replace(/"/g,'&quot;')}" style="${_DS}${isMod?';border-color:#f90':''}" onclick="event.stopPropagation()"></td>`;
+}
+function render(){
+  const tb=document.getElementById('tb');
+  const s=document.getElementById('si').value.toLowerCase();
+  const tf=document.getElementById('tf').value;
+  const sf=document.getElementById('sf').value;
+  FE=entries.filter(e=>{
+    if(s&&!e.name.toLowerCase().includes(s))return false;
+    if(tf!=='all'&&e.category!==tf)return false;
+    return true;
+  });
+  FE.sort((a,b)=>{let r;switch(sf){
+    case'name':r=a.name.localeCompare(b.name,'zh');break;
+    case'level':r=(a.itemLevel||0)-(b.itemLevel||0);break;
+    case'code':r=(a.itemCode||0)-(b.itemCode||0);break;
+    default:r=a.id-b.id}return r*sortDir});
+  const creatures=entries.filter(e=>e.isCreature);
+  const items=entries.filter(e=>!e.isCreature&&!e.isEquipment);
+  const equips=entries.filter(e=>e.isEquipment);
+  document.getElementById('cc').textContent=creatures.length;
+  document.getElementById('ic').textContent=items.length;
+  document.getElementById('ec').textContent=equips.length;
+  document.getElementById('mc').textContent=Object.keys(mods).length;
+  const bsBtn=document.getElementById('bs');
+  if(bsBtn&&!bsBtn.disabled)bsBtn.classList.toggle('dirty',Object.keys(mods).length>0);
+  else if(bsBtn)bsBtn.classList.remove('dirty');
+  const bsmBtn=document.getElementById('bsm');
+  if(bsmBtn&&!bsmBtn.disabled)bsmBtn.classList.toggle('dirty',Object.keys(mapMods).length>0);
+  else if(bsmBtn)bsmBtn.classList.remove('dirty');
+  const tp=Math.ceil(FE.length/PS);if(cp>=tp)cp=Math.max(0,tp-1);
+  const st=cp*PS,pe=FE.slice(st,st+PS);
+  document.getElementById('pi').textContent=`${cp+1}/${tp} (${FE.length})`;
+  document.getElementById('bp').disabled=cp===0;document.getElementById('bn').disabled=cp>=tp-1;
+  
+  // Dynamic thead
+  const hg=_getHeaderGroup(tf);
+  if(hg!==_lastHeaderGroup){
+    document.getElementById('thead').innerHTML=_buildThead(hg);
+    _lastHeaderGroup=hg;
+  }
+  
+  const _IS='width:56px;padding:5px 4px;border:1px solid var(--brd);border-radius:3px;background:var(--bg);color:var(--tx);font-size:12px;text-align:center;font-family:"SF Mono",Consolas,monospace';
+  tb.innerHTML='';
+  for(const e of pe){
+    const tr=document.createElement('tr');tr.dataset.id=e.id;
+    const im=mods[e.id]!==undefined;
+    const _em=mods[e.id]||{};
+    
+    if(hg==='creature'){
+      // Creature header (also used for "all")
+      const p=e.pairs||[];
+      let code=e.itemCode||'-',lv=e.itemLevel||'-';
+      let drop='-',steal='-';
+      const _mkI=(key,val,max)=>`<input type="number" class="inlineEdit" data-eid="${e.id}" data-key="${key}" value="${val}" min="0" max="${max||65535}" style="${_IS}" onclick="event.stopPropagation()">`;
+      if(e.isCreature&&p.length>=8){
+        const atk=_em[3]!==undefined?_em[3]:(p[3]||0);
+        const def=_em[4]!==undefined?_em[4]:(p[4]||0);
+        const agi=_em[5]!==undefined?_em[5]:(p[5]||0);
+        const wis=_em[6]!==undefined?_em[6]:(p[6]||0);
+        const mag=_em[7]!==undefined?_em[7]:(p[7]||0);
+        const hp=_em[10]!==undefined?_em[10]:(e.creature?e.creature.hp:0);
+        if(e.creature){
+          if(e.creature.drop.id){drop=_itemNameMap[e.creature.drop.id]||('#'+e.creature.drop.id);}
+          if(e.creature.steal.id){steal=_itemNameMap[e.creature.steal.id]||('#'+e.creature.steal.id);}
+        }
+        // Equip effect inline inputs
+        let equipCol='';
+        if(e.creature){
+          const cTrailer=(_em.creatureTrailer!==undefined)?_em.creatureTrailer:e.creature.hasTrailer;
+          const cEfxSrc=_em.creatureStats||e.creature.equipEffects||[];
+          const labelMap=cTrailer?{19:'命',20:'灵',21:'体'}:{7:'攻',8:'防',9:'敏'};
+          const eqParts=cEfxSrc.filter(s=>labelMap[s.type]).map(s=>{
+            const l=labelMap[s.type];
+            return `${l}<input type="number" class="inlineEq" data-eid="${e.id}" data-ft="${s.type}" value="${s.value}" min="-32768" max="32767" style="width:50px;padding:5px 4px;border:1px solid var(--brd);border-radius:3px;background:var(--bg);color:var(--tx);font-size:12px;text-align:center" onclick="event.stopPropagation()">`;
+          });
+          equipCol=eqParts.join(' ');
+        }
+        const isChecked=_selected.has(e.id);
+        tr.innerHTML=`<td style="text-align:center"><input type="checkbox" class="rowSel" data-id="${e.id}" ${isChecked?'checked':''}>
+        </td><td class="num">${e.id}</td><td class="nm">${e.name}</td>
+        <td class="num">${code}</td><td class="num">${lv}</td>
+        <td class="num">${_mkI(3,atk)}</td><td class="num">${_mkI(4,def)}</td><td class="num">${_mkI(5,agi)}</td>
+        <td class="num">${_mkI(6,wis)}</td><td class="num">${_mkI(7,mag)}</td>
+        <td class="num">${_mkI(10,hp)}</td>
+        <td style="font-size:11px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${drop}</td>
+        <td style="font-size:11px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${steal}</td>
+        <td style="font-size:10px;white-space:nowrap">${equipCol}</td>${_mkDescCell(e)}`;
+      }else{
+        // Non-creature row in "all" view
+        tr.innerHTML=`<td></td><td class="num">${e.id}</td><td class="nm">${e.name}</td>
+        <td class="num">${code}</td><td class="num">${lv}</td>
+        <td class="num">-</td><td class="num">-</td><td class="num">-</td>
+        <td class="num">-</td><td class="num">-</td><td class="num">-</td>
+        <td>-</td><td>-</td><td></td>${_mkDescCell(e)}`;
+      }
+    }else if(hg==='recovery'||hg==='statIncrease'){
+      const code=e.itemCode||'-',lv=e.itemLevel||'-';
+      // Build inline editable effect values
+      let effHtml='-';
+      if(e.effects&&e.effects.effects&&e.effects.effects.length>0){
+        const tgt=e.effects.target||'';
+        const isMax=e.itemCode>=3035&&e.itemCode<=3044;
+        effHtml=tgt+' '+e.effects.effects.map((ef,idx)=>{
+          const tn=EFF_TYPES[ef.type]||'?';
+          const curVal=(_em[`recovValue_${idx}`]!==undefined)?_em[`recovValue_${idx}`]:ef.value;
+          return `${tn}${isMax?'上限':''}+<input type="number" class="inlineEdit" data-eid="${e.id}" data-key="recovValue_${idx}" data-rtype="${ef.type}" value="${curVal}" min="0" max="65535" style="${_IS}" onclick="event.stopPropagation()">${ef.isPct?'%':''}`;
+        }).join(' ');
+      }
+      tr.innerHTML=`<td class="num">${e.id}</td><td class="nm">${e.name}</td>
+      <td class="num">${code}</td><td class="num">${lv}</td>
+      <td style="font-size:11px;white-space:nowrap">${effHtml}</td>${_mkDescCell(e)}`;
+    }else if(hg==='consumable'){
+      const code=e.itemCode||'-',lv=e.itemLevel||'-';
+      tr.innerHTML=`<td class="num">${e.id}</td><td class="nm">${e.name}</td>
+      <td class="num">${code}</td><td class="num">${lv}</td>${_mkDescCell(e)}`;
+    }else if(hg==='weapon'){
+      let lv=e.itemLevel||0;
+      if(_em.weaponLevel!==undefined)lv=_em.weaponLevel;
+      const code=e.itemCode||'-';
+      const who=(e.d007&&e.d007.raw.length>32)?WHO_MAP[e.d007.raw[32]]||'未知':'未知';
+      // Build inline editable stat inputs
+      const curStats=Array.isArray(_em.weaponStats)?_em.weaponStats.map(s=>({typeCode:s.type,value:s.value})):(e.equipStats||[]).map(s=>({typeCode:s.typeCode,value:s.value}));
+      const statsHtml=curStats.length>0?curStats.map(s=>{
+        const label=WEAPON_STAT_TYPES[s.typeCode]||('?'+s.typeCode);
+        return `${label}<input type="number" class="inlineWpnStat" data-eid="${e.id}" data-type="${s.typeCode}" value="${s.value}" min="-32768" max="32767" style="${_IS}" onclick="event.stopPropagation()">`;
+      }).join(' '):'(无)';
+      tr.innerHTML=`<td class="num">${e.id}</td><td class="nm">${e.name}</td>
+      <td class="num">${code}</td>
+      <td class="num"><input type="number" class="inlineEdit" data-eid="${e.id}" data-key="weaponLevel" value="${lv}" min="0" max="255" style="${_IS}" onclick="event.stopPropagation()"></td>
+      <td style="font-size:11px;white-space:nowrap">${statsHtml}</td>
+      <td style="font-size:11px;text-align:center">${who}</td>${_mkDescCell(e)}`;
+    }else if(hg==='armor'){
+      let lv=e.itemLevel||0;
+      if(_em.armorLevel!==undefined)lv=_em.armorLevel;
+      const code=e.itemCode||'-';
+      const rawElems=(e.d007&&e.d007.raw)?parseElements(e.d007.raw):[0,0,0,0,0];
+      const elems=rawElems.map((v,i)=>(_em[`armorElem_${i}`]!==undefined)?_em[`armorElem_${i}`]:v);
+      const who=(e.d007&&e.d007.raw.length>32)?WHO_MAP[e.d007.raw[32]]||'未知':'未知';
+      // Build inline editable stat inputs for armor
+      const trailerOn=(_em.armorTrailer!==undefined)?_em.armorTrailer:(e.d007&&e.d007.armorTrailer);
+      const armTypeTbl=trailerOn?ARMOR_STAT_TYPES_BOOST:ARMOR_STAT_TYPES_REGEN;
+      const curArmStats=Array.isArray(_em.armorStats)?_em.armorStats.map(s=>({typeCode:s.type,value:s.value})):(e.equipStats||[]).map(s=>({typeCode:s.typeCode,value:s.value}));
+      const armStatsHtml=curArmStats.length>0?curArmStats.map(s=>{
+        const label=armTypeTbl[s.typeCode]||('?'+s.typeCode);
+        return `${label}<input type="number" class="inlineArmStat" data-eid="${e.id}" data-type="${s.typeCode}" value="${s.value}" min="-32768" max="32767" style="${_IS}" onclick="event.stopPropagation()">`;
+      }).join(' '):'(无)';
+      tr.innerHTML=`<td class="num">${e.id}</td><td class="nm">${e.name}</td>
+      <td class="num">${code}</td>
+      <td class="num"><input type="number" class="inlineEdit" data-eid="${e.id}" data-key="armorLevel" value="${lv}" min="0" max="255" style="${_IS}" onclick="event.stopPropagation()"></td>
+      <td class="num"><input type="number" class="inlineEdit" data-eid="${e.id}" data-key="armorElem_0" value="${elems[0]}" min="-128" max="127" style="${_IS}" onclick="event.stopPropagation()"></td>
+      <td class="num"><input type="number" class="inlineEdit" data-eid="${e.id}" data-key="armorElem_1" value="${elems[1]}" min="-128" max="127" style="${_IS}" onclick="event.stopPropagation()"></td>
+      <td class="num"><input type="number" class="inlineEdit" data-eid="${e.id}" data-key="armorElem_2" value="${elems[2]}" min="-128" max="127" style="${_IS}" onclick="event.stopPropagation()"></td>
+      <td class="num"><input type="number" class="inlineEdit" data-eid="${e.id}" data-key="armorElem_3" value="${elems[3]}" min="-128" max="127" style="${_IS}" onclick="event.stopPropagation()"></td>
+      <td class="num"><input type="number" class="inlineEdit" data-eid="${e.id}" data-key="armorElem_4" value="${elems[4]}" min="-128" max="127" style="${_IS}" onclick="event.stopPropagation()"></td>
+      <td style="font-size:11px;white-space:nowrap">${armStatsHtml}</td>
+      <td style="font-size:11px;text-align:center">${who}</td>${_mkDescCell(e)}`;
+    }else if(hg==='magicTreasure'){
+      const code=e.itemCode||'-',lv=e.itemLevel||'-';
+      const raw=e.d007?e.d007.raw:null;
+      const staminaCost=_em.magicStamina!==undefined?_em.magicStamina:(raw?raw[27]:0);
+      const who=raw&&raw.length>32?WHO_MAP[raw[32]]||'未知':'未知';
+      const hasProficiency=raw&&raw.length>36&&raw[33]===0x0D&&raw[34]===0x00;
+      let profVal='-';
+      if(hasProficiency){profVal=_em.magicProficiency!==undefined?_em.magicProficiency:(raw[35]|(raw[36]<<8));}
+      tr.innerHTML=`<td class="num">${e.id}</td><td class="nm">${e.name}</td>
+      <td class="num">${code}</td><td class="num">${lv}</td>
+      <td class="num"><input type="number" class="inlineEdit" data-eid="${e.id}" data-key="magicStamina" value="${staminaCost}" min="0" max="255" style="${_IS}" onclick="event.stopPropagation()"></td>
+      <td style="font-size:11px;text-align:center">${who}</td>
+      <td class="num">${hasProficiency?`<input type="number" class="inlineEdit" data-eid="${e.id}" data-key="magicProficiency" value="${profVal}" min="0" max="65535" style="${_IS}" onclick="event.stopPropagation()">`:'-'}</td>${_mkDescCell(e)}`;
+    }else if(hg==='skill'){
+      const code=e.itemCode||'-';
+      const sd=e.skillData;
+      let typeStr='-',costTypeStr='-',costVal=0,target='-',effectsStr='';
+      if(sd){
+        typeStr=sd.type===0x11?'法术':'绝技';
+        const ctMap={8:'灵力',4:'体力',0:'气'};
+        costTypeStr=ctMap[sd.costType]!==undefined?ctMap[sd.costType]:('?'+sd.costType);
+        costVal=_em['skillCostValue']!==undefined?_em['skillCostValue']:sd.costValue;
+        const rt=sd.target;
+        if(rt===0x0010)target='对敌伤害';
+        else if(rt===0x0008)target='对敌辅助';
+        else if(rt===0x0004)target='对己辅助';
+        else if(rt===0x1000)target='友方治疗';
+        else if(rt===0x0001)target='友方解除';
+        else if(rt===0x1001)target='友方复活';
+        else target='0x'+rt.toString(16).toUpperCase();
+        const _sEffNames={0x13:'生命',0x14:'灵力',0x15:'体力'};
+        if(sd.effects&&sd.effects.length>0){
+          effectsStr=sd.effects.map((ef,idx)=>{
+            const n=_sEffNames[ef.type]||('?'+ef.type);
+            const curVal=_em['skillEff_'+idx]!==undefined?_em['skillEff_'+idx]:ef.value;
+            return '回复'+n+'<input type="number" class="inlineEdit" data-eid="'+e.id+'" data-key="skillEff_'+idx+'" value="'+curVal+'" min="0" max="65535" style="'+_IS+';width:50px" onclick="event.stopPropagation()">'+(sd.hasPct?'%':'');
+          }).join(' ');
+        }
+        if(sd.costType===0&&sd.costValue>0)effectsStr=effectsStr?effectsStr+' (全体攻击)':'全体攻击';
+      }
+      tr.innerHTML=`<td class="num">${e.id}</td><td class="nm">${e.name}</td>
+      <td class="num">${code}</td><td style="font-size:11px;text-align:center">${typeStr}</td>
+      <td style="font-size:11px;text-align:center">${costTypeStr}</td>
+      <td class="num"><input type="number" class="inlineEdit" data-eid="${e.id}" data-key="skillCostValue" value="${costVal}" min="0" max="4095" style="${_IS}" onclick="event.stopPropagation()"></td>
+      <td style="font-size:11px">${target}</td>
+      <td style="font-size:11px">${effectsStr||'-'}</td>${_mkDescCell(e)}`;
+    }else{
+      // Fallback
+      tr.innerHTML=`<td class="num">${e.id}</td><td class="nm">${e.name}</td>
+      <td class="num">${e.itemCode||'-'}</td><td>-</td>${_mkDescCell(e)}`;
+    }
+    
+    if(im)tr.classList.add('sel');
+    tr.onclick=(ev)=>{const c=ev.target.classList;if(c.contains('rowSel')||c.contains('inlineEq')||c.contains('inlineEdit')||c.contains('inlineDesc')||c.contains('inlineWpnStat')||c.contains('inlineArmStat'))return;openE(e)};tb.appendChild(tr);
+  }
+}
+
+function openE(e){
+  EE=e;const mo=document.getElementById('em');
+  const m=mods[e.id]||{};
+  document.getElementById('mt').textContent=`#${e.id} ${e.name}`;
+  const typeStr=e.isCreature?'活物':e.isEquipment?'装备':'物品';
+  let _lvShow=e.itemLevel;
+  if(e.itemCode>=3201&&e.itemCode<=3256&&m.weaponLevel!==undefined)_lvShow=m.weaponLevel+' (已暂存)';
+  else if(e.itemCode>=3271&&e.itemCode<=3398&&m.armorLevel!==undefined)_lvShow=m.armorLevel+' (已暂存)';
+  document.getElementById('msub').textContent=`${typeStr} | 代码:${e.itemCode} 等级:${_lvShow}`;
+  
+  const fg=document.getElementById('fgc');fg.innerHTML='';fg.style.display='grid';
+  
+  if(e.isCreature&&e.creature){
+    const c=e.creature;
+    const basicFields=[['代码',0],['种类',1],['等级',2],['攻击',3],['防御',4],['敏捷',5],['智慧',6],['抗魔',7],['打法',8],['经验',9],['生命',10]];
+    for(const [lbl,pi] of basicFields){
+      const val=m[pi]!==undefined?m[pi]:(e.pairs[pi]!==undefined?e.pairs[pi]:0);
+      const ch=m[pi]!==undefined&&m[pi]!==e.pairs[pi]?'ch':'';
+      fg.innerHTML+=`<div><label>${lbl} [${pi}]</label><input type="number" data-pidx="${pi}" min="0" max="65535" value="${val}" class="${ch}"></div>`;
+    }
+    // Compound LE32 fields (ID + param) — read-only display
+    const compoundFields=[
+      ['奇术1',c.skills[0]],['奇术2',c.skills[1]],['奇术3',c.skills[2]],
+      ['特技1',c.specials[0]],['特技2',c.specials[1]],
+      ['回复1',c.recoveries[0]],['回复2',c.recoveries[1]]
+    ];
+    for(const [lbl,fld] of compoundFields){
+      fg.innerHTML+=`<div><label>${lbl}</label><span style="font-size:12px;color:var(--tx2)">ID:${fld.id} 参数:${fld.param}</span></div>`;
+    }
+    // Build categorized item data for two-level drop/steal selectors
+    const _itemCategories=[
+      {label:'全部',min:0,max:99999},
+      {label:'恢复物品',min:3001,max:3024},
+      {label:'解除状态',min:3025,max:3034},
+      {label:'属性物品',min:3035,max:3044},
+      {label:'特殊物品',min:3045,max:3047},
+      {label:'增强/削弱',min:3048,max:3072},
+      {label:'雨皇花',min:3089,max:3089},
+      {label:'法宝',min:3151,max:3184},
+      {label:'武器',min:3201,max:3256},
+      {label:'投掷',min:3257,max:3267},
+      {label:'防具/饰品',min:3271,max:3398}
+    ];
+    const _allItems=Object.entries(_itemNameMap).sort((a,b)=>parseInt(a[0])-parseInt(b[0]));
+    const catOptsHtml=_itemCategories.map((c,i)=>`<option value="${i}">${c.label}</option>`).join('');
+    const curDropId=m.creatureDrop_id!==undefined?m.creatureDrop_id:c.drop.id;
+    const curDropProb=m.creatureDrop_prob!==undefined?m.creatureDrop_prob:c.drop.prob;
+    const curStealId=m.creatureSteal_id!==undefined?m.creatureSteal_id:c.steal.id;
+    const curStealProb=m.creatureSteal_prob!==undefined?m.creatureSteal_prob:c.steal.prob;
+    const curGold=m.creatureGold!==undefined?m.creatureGold:c.gold;
+    const selStyle='padding:4px 6px;border:1px solid var(--brd);border-radius:4px;background:var(--bg);color:var(--tx);font-size:12px';
+    fg.innerHTML+=`<div style="grid-column:1/-1;margin-top:8px;border-top:1px solid var(--brd);padding-top:8px">
+      <h3 style="font-size:13px;color:var(--tx2);margin:0 0 8px">掉落/偷取/金钱</h3>
+      <div style="display:grid;grid-template-columns:auto auto 1fr auto;gap:6px;align-items:center">
+        <label style="font-size:12px">掉落物品</label>
+        <select id="creatureDropCat" style="${selStyle};max-width:110px">${catOptsHtml}</select>
+        <select id="creatureDropId" style="${selStyle};max-width:220px"></select>
+        <div style="display:flex;align-items:center;gap:4px"><label style="font-size:11px;color:var(--tx2)">几率</label><input type="number" id="creatureDropProb" min="0" max="65535" value="${curDropProb}" style="width:60px;padding:4px;border:1px solid var(--brd);border-radius:4px;background:var(--bg);color:var(--tx);font-size:12px"></div>
+        <label style="font-size:12px">偷取物品</label>
+        <select id="creatureStealCat" style="${selStyle};max-width:110px">${catOptsHtml}</select>
+        <select id="creatureStealId" style="${selStyle};max-width:220px"></select>
+        <div style="display:flex;align-items:center;gap:4px"><label style="font-size:11px;color:var(--tx2)">几率</label><input type="number" id="creatureStealProb" min="0" max="65535" value="${curStealProb}" style="width:60px;padding:4px;border:1px solid var(--brd);border-radius:4px;background:var(--bg);color:var(--tx);font-size:12px"></div>
+        <label style="font-size:12px">金钱</label>
+        <input type="number" id="creatureGold" min="0" max="4294967295" value="${curGold}" style="${selStyle};max-width:220px" colspan="2">
+        <span></span>
+      </div>
+    </div>`;
+    // Creature equip effects editor (fixed layout, no add/delete)
+    const cEfx=m.creatureStats||c.equipEffects||[];
+    const cTrailer=(m.creatureTrailer!==undefined)?m.creatureTrailer:c.hasTrailer;
+    // Only show fields the creature actually has
+    const labelMapModal=cTrailer?{19:'命',20:'灵',21:'体'}:{7:'攻',8:'防',9:'敏'};
+    const cFieldsHtml=cEfx.filter(s=>labelMapModal[s.type]).map(s=>{
+      const label=labelMapModal[s.type];
+      return `<div style="display:flex;flex-direction:column;gap:3px">
+        <label style="font-size:10px;color:var(--tx2);font-weight:bold">${label}+</label>
+        <input type="number" class="creatureFixedStat" data-type="${s.type}" min="-32768" max="32767" value="${s.value}" style="width:70px;padding:4px 6px;border:1px solid var(--brd);border-radius:4px;background:var(--bg);color:var(--tx);font-size:12px;font-family:'SF Mono',Consolas,monospace">
+      </div>`;
+    }).join('');
+    if(cFieldsHtml){
+      fg.innerHTML+=`<div style="grid-column:1/-1;margin-top:8px;border-top:1px solid var(--brd);padding-top:8px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <h3 style="font-size:13px;color:var(--tx2);margin:0">装备效果</h3>
+          <label style="font-size:11px;display:flex;align-items:center;gap:4px;color:var(--tx2)"><input type="checkbox" id="creatureTrailer" ${cTrailer?'checked':''} disabled> 上限模式(1B 00 00 01)</label>
+        </div>
+        <div style="display:flex;gap:12px;align-items:end">${cFieldsHtml}</div>
+      </div>`;
+    }
+    // Wire up two-level category→item filtering (closure captures _itemCategories, _allItems, curDropId, curStealId)
+    setTimeout(()=>{
+      function fillItemSel(selId,catIdx,curVal){
+        const sel=document.getElementById(selId);if(!sel)return;
+        const cat=_itemCategories[catIdx];
+        let html='<option value="0">(\u65E0)</option>';
+        _allItems.forEach(([code,name])=>{
+          const c=parseInt(code);
+          if(catIdx===0||(c>=cat.min&&c<=cat.max))html+='<option value="'+code+'">'+name+' ('+code+')</option>';
+        });
+        sel.innerHTML=html;
+        sel.value=String(curVal);
+        if(sel.value!==String(curVal))sel.value='0';
+      }
+      function findCatForCode(code){
+        if(!code)return 0;
+        for(let i=1;i<_itemCategories.length;i++){if(code>=_itemCategories[i].min&&code<=_itemCategories[i].max)return i;}
+        return 0;
+      }
+      // Initialize drop
+      const dropCatSel=document.getElementById('creatureDropCat');
+      const initDropCat=findCatForCode(curDropId);
+      if(dropCatSel)dropCatSel.value=String(initDropCat);
+      fillItemSel('creatureDropId',initDropCat,curDropId);
+      if(dropCatSel)dropCatSel.onchange=()=>fillItemSel('creatureDropId',parseInt(dropCatSel.value),0);
+      // Initialize steal
+      const stealCatSel=document.getElementById('creatureStealCat');
+      const initStealCat=findCatForCode(curStealId);
+      if(stealCatSel)stealCatSel.value=String(initStealCat);
+      fillItemSel('creatureStealId',initStealCat,curStealId);
+      if(stealCatSel)stealCatSel.onchange=()=>fillItemSel('creatureStealId',parseInt(stealCatSel.value),0);
+    },0);
+  }else if(e.isCreature){
+    fg.innerHTML+='<div><label>数据</label><span>无法解析</span></div>';
+  }
+  
+  // Equipment stats — overlay staged mods so the modal preview matches the table
+  const oldStats=document.getElementById('equipStatsSec');if(oldStats)oldStats.remove();
+  const _eIsWeapon=e.itemCode>=3201&&e.itemCode<=3256;
+  const _eIsArmor=e.itemCode>=3271&&e.itemCode<=3398;
+  let _displayStats=e.equipStats;
+  if(_eIsWeapon&&Array.isArray(m.weaponStats)){
+    _displayStats=m.weaponStats.map(s=>({type:WEAPON_STAT_TYPES[s.type]||('?'+s.type),value:s.value,typeCode:s.type}));
+  }else if(_eIsArmor&&Array.isArray(m.armorStats)){
+    const trailerOn=(m.armorTrailer!==undefined)?m.armorTrailer:(e.d007&&e.d007.armorTrailer);
+    const tbl=trailerOn?ARMOR_STAT_TYPES_BOOST:ARMOR_STAT_TYPES_REGEN;
+    _displayStats=m.armorStats.map(s=>({type:tbl[s.type]||('?'+s.type),value:s.value,typeCode:s.type}));
+  }
+  if(_displayStats&&_displayStats.length>0){
+    const statsHtml=_displayStats.map(s=>{
+      const valClass=s.value>0?'pos':s.value<0?'neg':'';
+      return `<div class="elem-item"><div class="name">${s.type}</div><div class="val ${valClass}">${s.value>0?'+':''}${s.value}</div></div>`;
+    }).join('');
+    const statsDiv=document.createElement('div');
+    statsDiv.id='equipStatsSec';statsDiv.style.cssText='margin-top:8px';
+    statsDiv.innerHTML='<h3 style="font-size:13px;color:var(--tx2);margin:0 0 6px">装备属性</h3><div class="elem-grid">'+statsHtml+'</div>';
+    const anchor=document.getElementById('equipSec')||document.getElementById('fgc');
+    anchor.parentNode.insertBefore(statsDiv,anchor.nextSibling);
+  }
+  
+  // Effect summary
+  const effSumSec=document.getElementById('effSummary');
+  const effSumText=document.getElementById('effSummaryText');
+  if(e.isEquipment&&_displayStats&&_displayStats.length>0){
+    // For equipment, show staged or parsed equipStats instead of effects
+    effSumSec.style.display='block';
+    effSumText.innerHTML=_displayStats.map(s=>{
+      const valClass=s.value>0?'pos':s.value<0?'neg':'';
+      return `<span style="color:var(--ok)">${s.type} ${s.value>0?'+':''}${s.value}</span>`;
+    }).join(' / ');
+  }else if(e.effects&&e.effects.effects&&e.effects.effects.length>0){
+    effSumSec.style.display='block';
+    const tgt=e.effects.target||'';
+    const maxNote=e.effects.hasMax?' (提升上限)':'';
+    effSumText.innerHTML=`<div style="margin-bottom:4px;color:var(--tx2);font-size:11px">${tgt}${maxNote}</div>`+
+      e.effects.effects.map(ef=>{
+      const tn=EFF_TYPES[ef.type]||'未知';
+      const maxMark=ef.isMax?'上限':'';
+      const pctMark=ef.isPct?'%':'';
+      return `<span style="color:var(--ok)">${tn}${maxMark} +${ef.value}${pctMark}</span>`;
+    }).join(' / ');
+  }else effSumSec.style.display='none';
+  
+  // Simplified recovery item editor (3001-3024)
+  const oldRecSec=document.getElementById('recovSec');if(oldRecSec)oldRecSec.remove();
+  const isRecovery=e.itemCode>=3001&&e.itemCode<=3024||e.itemCode===3089;
+  const isStatIncrease=e.itemCode>=3035&&e.itemCode<=3044;
+  if((isRecovery||isStatIncrease)&&e.effects&&e.effects.effects&&e.effects.effects.length>0){
+    const recovSec=document.createElement('div');
+    recovSec.id='recovSec';recovSec.style.cssText='margin-top:12px;padding:12px;background:var(--s1);border:1px solid var(--brd);border-radius:8px';
+    
+    const effects=e.effects.effects;
+    const isPct=e.effects.hasPct||false;
+    // Resolve current value (mods override the original parsed value)
+    const curLevel=(m['recovLevel']!==undefined)?m['recovLevel']:(e.itemLevel||0);
+    const curPrice=(m['recovPrice']!==undefined)?m['recovPrice']:(e.effects.price||0);
+    
+    let effectsHtml='';
+    effects.forEach((ef,idx)=>{
+      const curType=(m[`recovType_${idx}`]!==undefined)?m[`recovType_${idx}`]:ef.type;
+      const curValue=(m[`recovValue_${idx}`]!==undefined)?m[`recovValue_${idx}`]:ef.value;
+      effectsHtml+=`
+        <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end;margin-bottom:8px" class="effect-row" data-idx="${idx}">
+          <div style="display:flex;flex-direction:column;gap:3px">
+            <label style="font-size:10px;color:var(--tx2);font-weight:bold">效果${idx+1} 类别</label>
+            <select class="recovType" data-idx="${idx}" style="padding:6px 8px;border:1px solid var(--brd);border-radius:6px;background:var(--bg);color:var(--tx);font-size:13px">
+              <option value="9" ${curType===9?'selected':''}>力量</option>
+              <option value="15" ${curType===15?'selected':''}>耐力</option>
+              <option value="16" ${curType===16?'selected':''}>敏捷</option>
+              <option value="17" ${curType===17?'selected':''}>智慧</option>
+              <option value="19" ${curType===19?'selected':''}>生命</option>
+              <option value="20" ${curType===20?'selected':''}>灵力</option>
+              <option value="21" ${curType===21?'selected':''}>体力</option>
+            </select>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:3px">
+            <label style="font-size:10px;color:var(--tx2);font-weight:bold">增加值</label>
+            <input type="number" class="recovValue" data-idx="${idx}" min="0" max="65535" value="${curValue}" style="padding:6px 8px;border:1px solid var(--brd);border-radius:6px;background:var(--bg);color:var(--tx);font-size:13px;font-family:'SF Mono',Consolas,monospace">
+          </div>
+          <div style="padding-bottom:6px;color:var(--tx2);font-size:11px">${ef.isMax?'上限':''}</div>
+        </div>
+      `;
+    });
+    
+    recovSec.innerHTML=`
+      <h3 style="font-size:13px;color:var(--tx2);margin:0 0 8px">${isStatIncrease?'上限增加效果编辑':'回复效果编辑'}</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--brd)">
+        <div style="display:flex;flex-direction:column;gap:3px">
+          <label style="font-size:10px;color:var(--tx2);font-weight:bold">等级</label>
+          <input type="number" id="recovLevel" min="0" max="255" value="${curLevel}" style="padding:6px 8px;border:1px solid var(--brd);border-radius:6px;background:var(--bg);color:var(--tx);font-size:13px;font-family:'SF Mono',Consolas,monospace">
+        </div>
+        <div style="display:flex;flex-direction:column;gap:3px">
+          <label style="font-size:10px;color:var(--tx2);font-weight:bold">价格</label>
+          <input type="number" id="recovPrice" min="0" max="65535" value="${curPrice}" style="padding:6px 8px;border:1px solid var(--brd);border-radius:6px;background:var(--bg);color:var(--tx);font-size:13px;font-family:'SF Mono',Consolas,monospace">
+        </div>
+      </div>
+      ${effectsHtml}
+      <div style="margin-top:8px;display:flex;gap:16px;align-items:center">
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--tx);cursor:not-allowed;opacity:0.6">
+          <input type="checkbox" ${isPct?'checked':''} disabled style="width:16px;height:16px">
+          <span>百分比 (只读)</span>
+        </label>
+        <span style="color:var(--tx2);font-size:11px">目标: ${e.effects.target||'未知'}</span>
+      </div>
+    `;
+    document.getElementById('fgc').parentNode.insertBefore(recovSec,document.getElementById('fgc').nextSibling);
+  }
+  
+  // Simplified editor for magic treasures (3151-3184)
+  const oldMagicSec=document.getElementById('magicSec');if(oldMagicSec)oldMagicSec.remove();
+  const isMagicTreasure=e.itemCode>=3151&&e.itemCode<=3184;
+  if(isMagicTreasure&&e.d007){
+    const raw=e.d007.raw;
+    const level=raw[9]|(raw[10]<<8);
+    const staminaCost=raw[27];
+    const equipEffect=raw[28];
+    const whoCanEquip=raw[32];
+    
+    // Check for 0D 00 separator at offset 33-34
+    const hasProficiency=raw.length>34&&raw[33]===0x0D&&raw[34]===0x00;
+    const maxProficiency=hasProficiency&&raw.length>36?(raw[35]|(raw[36]<<8)):0;
+    
+    const magicSec=document.createElement('div');
+    magicSec.id='magicSec';magicSec.style.cssText='margin-top:12px;padding:12px;background:var(--s1);border:1px solid var(--brd);border-radius:8px';
+    
+    magicSec.innerHTML=`
+      <h3 style="font-size:13px;color:var(--tx2);margin:0 0 8px">法宝编辑</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px">
+        <div style="display:flex;flex-direction:column;gap:3px">
+          <label style="font-size:10px;color:var(--tx2);font-weight:bold">等级</label>
+          <input type="number" id="magicLevel" min="0" max="255" value="${level}" style="padding:6px 8px;border:1px solid var(--brd);border-radius:6px;background:var(--bg);color:var(--tx);font-size:13px;font-family:'SF Mono',Consolas,monospace">
+        </div>
+        <div style="display:flex;flex-direction:column;gap:3px">
+          <label style="font-size:10px;color:var(--tx2);font-weight:bold">体力消耗</label>
+          <input type="number" id="magicStamina" min="0" max="255" value="${staminaCost}" style="padding:6px 8px;border:1px solid var(--brd);border-radius:6px;background:var(--bg);color:var(--tx);font-size:13px;font-family:'SF Mono',Consolas,monospace">
+        </div>
+        <div style="display:flex;flex-direction:column;gap:3px">
+          <label style="font-size:10px;color:var(--tx2);font-weight:bold">装备效果</label>
+          <select id="magicEffect" style="padding:6px 8px;border:1px solid var(--brd);border-radius:6px;background:var(--bg);color:var(--tx);font-size:13px">
+            <option value="0" ${equipEffect===0?'selected':''}>被动生效</option>
+            <option value="64" ${equipEffect===64?'selected':''}>主动使用</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+        <div style="display:flex;flex-direction:column;gap:3px">
+          <label style="font-size:10px;color:var(--tx2);font-weight:bold">谁可以装备</label>
+          <select id="magicWho" style="padding:6px 8px;border:1px solid var(--brd);border-radius:6px;background:var(--bg);color:var(--tx);font-size:13px">
+            <option value="16" ${whoCanEquip===16?'selected':''}>张烈</option>
+            <option value="32" ${whoCanEquip===32?'selected':''}>玉儿</option>
+            <option value="64" ${whoCanEquip===64?'selected':''}>小雪</option>
+            <option value="96" ${whoCanEquip===96?'selected':''}>女性</option>
+            <option value="128" ${whoCanEquip===128?'selected':''}>靖仇</option>
+            <option value="144" ${whoCanEquip===144?'selected':''}>男性</option>
+            <option value="240" ${whoCanEquip===240?'selected':''}>所有人</option>
+          </select>
+        </div>
+        ${hasProficiency?`
+        <div style="display:flex;flex-direction:column;gap:3px">
+          <label style="font-size:10px;color:var(--tx2);font-weight:bold">最大熟练度</label>
+          <input type="number" id="magicProficiency" min="0" max="65535" value="${maxProficiency}" style="padding:6px 8px;border:1px solid var(--brd);border-radius:6px;background:var(--bg);color:var(--tx);font-size:13px;font-family:'SF Mono',Consolas,monospace">
+        </div>
+        `:`<div style="display:flex;flex-direction:column;gap:3px;opacity:0.5"><label style="font-size:10px;color:var(--tx2);font-weight:bold">最大熟练度</label><input type="text" value="无需修炼" disabled style="padding:6px 8px;border:1px solid var(--brd);border-radius:6px;background:var(--bg);color:var(--tx2);font-size:13px"></div>`}
+      </div>
+    `;
+    document.getElementById('fgc').parentNode.insertBefore(magicSec,document.getElementById('fgc').nextSibling);
+  }
+  
+  // Skill editor (category==='skill')
+  const oldSkillSec=document.getElementById('skillSec');if(oldSkillSec)oldSkillSec.remove();
+  if(e.category==='skill'&&e.skillData&&e.d007){
+    const sd=e.skillData;
+    const curCostVal=(m['skillCostValue']!==undefined)?m['skillCostValue']:sd.costValue;
+    const typeLabel=sd.type===0x11?'法术':'绝技';
+    const ctMap={8:'灵力',4:'体力',0:'气'};
+    const costTypeLabel=ctMap[sd.costType]!==undefined?ctMap[sd.costType]:('?'+sd.costType);
+    const rawTarget=sd.target;
+    let targetLabel='0x'+rawTarget.toString(16).toUpperCase().padStart(4,'0');
+    if(rawTarget===0x0010)targetLabel='对敌伤害';
+    else if(rawTarget===0x0008)targetLabel='对敌辅助';
+    else if(rawTarget===0x0004)targetLabel='对己辅助';
+    else if(rawTarget===0x1000)targetLabel='友方治疗';
+    else if(rawTarget===0x0001)targetLabel='友方解除状态';
+    else if(rawTarget===0x1001)targetLabel='友方复活';
+    const _sEffNames={0x13:'生命',0x14:'灵力',0x15:'体力'};
+    let effectsHtml='';
+    if(sd.effects&&sd.effects.length>0){
+      effectsHtml=sd.effects.map((ef,idx)=>{
+        const n=_sEffNames[ef.type]||('?'+ef.type);
+        const curEVal=(m['skillEff_'+idx]!==undefined)?m['skillEff_'+idx]:ef.value;
+        return `<span style="margin-right:10px">回复${n} <input type="number" id="skillEffM_${idx}" min="0" max="65535" value="${curEVal}" style="width:60px;padding:6px 8px;border:1px solid var(--brd);border-radius:6px;background:var(--bg);color:var(--tx);font-size:13px;font-family:'SF Mono',Consolas,monospace">${sd.hasPct?'%':''}</span>`;
+      }).join('');
+    }
+    if(sd.costType===0&&sd.costValue>0)effectsHtml=effectsHtml?effectsHtml+' <span style="color:var(--tx2)">(全体攻击)</span>':'<span>全体攻击</span>';
+    
+    const skillSec=document.createElement('div');
+    skillSec.id='skillSec';skillSec.style.cssText='margin-top:12px;padding:12px;background:var(--s1);border:1px solid var(--brd);border-radius:8px';
+    skillSec.innerHTML=`
+      <h3 style="font-size:13px;color:var(--tx2);margin:0 0 8px">奇术/技能编辑</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px">
+        <div style="display:flex;flex-direction:column;gap:3px">
+          <label style="font-size:10px;color:var(--tx2);font-weight:bold">类型</label>
+          <input type="text" value="${typeLabel}" disabled style="padding:6px 8px;border:1px solid var(--brd);border-radius:6px;background:var(--bg);color:var(--tx2);font-size:12px">
+        </div>
+        <div style="display:flex;flex-direction:column;gap:3px">
+          <label style="font-size:10px;color:var(--tx2);font-weight:bold">消耗类型</label>
+          <input type="text" value="${costTypeLabel}" disabled style="padding:6px 8px;border:1px solid var(--brd);border-radius:6px;background:var(--bg);color:var(--tx2);font-size:12px">
+        </div>
+        <div style="display:flex;flex-direction:column;gap:3px">
+          <label style="font-size:10px;color:var(--tx2);font-weight:bold">消耗值</label>
+          <input type="number" id="skillCostValue" min="0" max="4095" value="${curCostVal}" style="padding:6px 8px;border:1px solid var(--brd);border-radius:6px;background:var(--bg);color:var(--tx);font-size:13px;font-family:'SF Mono',Consolas,monospace">
+        </div>
+        <div style="display:flex;flex-direction:column;gap:3px">
+          <label style="font-size:10px;color:var(--tx2);font-weight:bold">作用对象</label>
+          <input type="text" value="${targetLabel}" disabled style="padding:6px 8px;border:1px solid var(--brd);border-radius:6px;background:var(--bg);color:var(--tx2);font-size:12px">
+        </div>
+      </div>
+      <div style="margin-top:8px;font-size:12px;color:var(--tx)"><span style="font-size:10px;color:var(--tx2);font-weight:bold">效果：</span>${effectsHtml||'<span style="color:var(--tx2)">-</span>'}</div>
+    `;
+    document.getElementById('fgc').parentNode.insertBefore(skillSec,document.getElementById('fgc').nextSibling);
+  }
+  
+  // Simplified weapon editor (3201-3256)
+  const oldWeaponSec=document.getElementById('weaponSec');if(oldWeaponSec)oldWeaponSec.remove();
+  const isWeapon=e.itemCode>=3201&&e.itemCode<=3256;
+  if(isWeapon&&e.d007){
+    const raw=e.d007.raw;
+    const level=raw[9]|(raw[10]<<8);
+    const category=raw[11]|(raw[12]<<8);
+    const whoCanEquip=raw[32];
+    const whoMap={0x10:'张烈',0x20:'玉儿',0x40:'小雪',0x60:'女性',0x80:'靖仇',0x90:'男性',0xF0:'所有人'};
+    
+    const weaponSec=document.createElement('div');
+    weaponSec.id='weaponSec';weaponSec.style.cssText='margin-top:12px;padding:12px;background:var(--s1);border:1px solid var(--brd);border-radius:8px';
+    
+    // Build weapon stat options once
+    const weaponTypeOptions=Object.entries(WEAPON_STAT_TYPES).map(([t,n])=>`<option value="${t}">${n}</option>`).join('');
+    
+    // Build weapon stats HTML (one row per current stat)
+    let statsHtml='';
+    (e.equipStats||[]).forEach((s,idx)=>{
+      statsHtml+=`
+        <div class="weaponStatRow" data-idx="${idx}" style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end;margin-bottom:8px">
+          <div style="display:flex;flex-direction:column;gap:3px">
+            <label style="font-size:10px;color:var(--tx2);font-weight:bold">效果类型</label>
+            <select class="weaponStatType" style="padding:6px 8px;border:1px solid var(--brd);border-radius:6px;background:var(--bg);color:var(--tx);font-size:13px">
+              ${Object.entries(WEAPON_STAT_TYPES).map(([t,n])=>`<option value="${t}" ${parseInt(t)===s.typeCode?'selected':''}>${n}</option>`).join('')}
+            </select>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:3px">
+            <label style="font-size:10px;color:var(--tx2);font-weight:bold">数值</label>
+            <input type="number" class="weaponStatValue" min="-32768" max="32767" value="${s.value}" style="padding:6px 8px;border:1px solid var(--brd);border-radius:6px;background:var(--bg);color:var(--tx);font-size:13px;font-family:'SF Mono',Consolas,monospace">
+          </div>
+          <button type="button" class="weaponStatDel btn" style="padding:6px 10px;font-size:12px">删除</button>
+        </div>
+      `;
+    });
+    
+    weaponSec.innerHTML=`
+      <h3 style="font-size:13px;color:var(--tx2);margin:0 0 8px">武器编辑</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--brd)">
+        <div style="display:flex;flex-direction:column;gap:3px">
+          <label style="font-size:10px;color:var(--tx2);font-weight:bold">等级</label>
+          <input type="number" id="weaponLevel" min="0" max="255" value="${level}" style="padding:6px 8px;border:1px solid var(--brd);border-radius:6px;background:var(--bg);color:var(--tx);font-size:13px;font-family:'SF Mono',Consolas,monospace">
+        </div>
+        <div style="display:flex;flex-direction:column;gap:3px">
+          <label style="font-size:10px;color:var(--tx2);font-weight:bold">种类</label>
+          <select id="weaponCategory" style="padding:6px 8px;border:1px solid var(--brd);border-radius:6px;background:var(--bg);color:var(--tx);font-size:13px">
+            <option value="11" ${category===11?'selected':''}>普通武器</option>
+            <option value="21" ${category===21?'selected':''}>附带技能武器</option>
+          </select>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:3px">
+          <label style="font-size:10px;color:var(--tx2);font-weight:bold">谁可以装备</label>
+          <select id="weaponWho" style="padding:6px 8px;border:1px solid var(--brd);border-radius:6px;background:var(--bg);color:var(--tx);font-size:13px">
+            <option value="16" ${whoCanEquip===16?'selected':''}>张烈</option>
+            <option value="32" ${whoCanEquip===32?'selected':''}>玉儿</option>
+            <option value="64" ${whoCanEquip===64?'selected':''}>小雪</option>
+            <option value="96" ${whoCanEquip===96?'selected':''}>女性</option>
+            <option value="128" ${whoCanEquip===128?'selected':''}>靖仇</option>
+            <option value="144" ${whoCanEquip===144?'selected':''}>男性</option>
+            <option value="240" ${whoCanEquip===240?'selected':''}>所有人</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-bottom:8px;font-size:11px;color:var(--tx2);font-weight:bold">效果列表（可增/删/改，支持变长保存）</div>
+      <div id="weaponStatList">${statsHtml}</div>
+      <button type="button" id="weaponStatAdd" class="btn" style="margin-top:6px;font-size:12px">+ 添加效果</button>
+    `;
+    document.getElementById('fgc').parentNode.insertBefore(weaponSec,document.getElementById('fgc').nextSibling);
+    
+    // Wire add/del buttons
+    const wList=weaponSec.querySelector('#weaponStatList');
+    const newRowHtml=()=>`
+      <div class="weaponStatRow" style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end;margin-bottom:8px">
+        <div style="display:flex;flex-direction:column;gap:3px">
+          <label style="font-size:10px;color:var(--tx2);font-weight:bold">效果类型</label>
+          <select class="weaponStatType" style="padding:6px 8px;border:1px solid var(--brd);border-radius:6px;background:var(--bg);color:var(--tx);font-size:13px">${weaponTypeOptions}</select>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:3px">
+          <label style="font-size:10px;color:var(--tx2);font-weight:bold">数值</label>
+          <input type="number" class="weaponStatValue" min="-32768" max="32767" value="0" style="padding:6px 8px;border:1px solid var(--brd);border-radius:6px;background:var(--bg);color:var(--tx);font-size:13px;font-family:'SF Mono',Consolas,monospace">
+        </div>
+        <button type="button" class="weaponStatDel btn" style="padding:6px 10px;font-size:12px">删除</button>
+      </div>`;
+    weaponSec.querySelector('#weaponStatAdd').onclick=()=>{
+      wList.insertAdjacentHTML('beforeend',newRowHtml());
+    };
+    weaponSec.addEventListener('click',ev=>{
+      if(ev.target.classList.contains('weaponStatDel')){
+        ev.target.closest('.weaponStatRow').remove();
+      }
+    });
+  }
+  
+  // Simplified armor/accessory editor (3271-3398)
+  // Layout from offset 9 onward is identical to weapons; offset 2..6 holds 金/木/水/火/土 resistances.
+  const oldArmorSec=document.getElementById('armorSec');if(oldArmorSec)oldArmorSec.remove();
+  const isArmor=e.itemCode>=3271&&e.itemCode<=3398;
+  if(isArmor&&e.d007){
+    const raw=e.d007.raw;
+    const level=raw[9]|(raw[10]<<8);
+    const category=raw[11]|(raw[12]<<8);
+    const whoCanEquip=raw[32];
+    const elements=parseElements(raw);
+    const curTrailer=(m['armorTrailer']!==undefined)?!!m['armorTrailer']:!!e.d007.armorTrailer;
+    const armorTypes=curTrailer?ARMOR_STAT_TYPES_BOOST:ARMOR_STAT_TYPES_REGEN;
+    const curLevel=(m['armorLevel']!==undefined)?m['armorLevel']:level;
+    const curCategory=(m['armorCategory']!==undefined)?m['armorCategory']:category;
+    const curWho=(m['armorWho']!==undefined)?m['armorWho']:whoCanEquip;
+    const curElements=elements.map((v,idx)=>(m[`armorElem_${idx}`]!==undefined)?m[`armorElem_${idx}`]:v);
+    // Staged armorStats override any parsed equipStats; this matters when toggling the trailer
+    // (openE is re-called, and we'd otherwise drop the user's pending row edits).
+    const stagedStats=Array.isArray(m['armorStats'])?m['armorStats'].map(s=>({typeCode:s.type,value:s.value})):null;
+    const renderStats=stagedStats||(e.equipStats||[]);
+
+    const armorSec=document.createElement('div');
+    armorSec.id='armorSec';armorSec.style.cssText='margin-top:12px;padding:12px;background:var(--s1);border:1px solid var(--brd);border-radius:8px';
+
+    // Element resistance inputs (signed 8-bit)
+    let elemHtml='';
+    ELEMENT_NAMES.forEach((name,idx)=>{
+      elemHtml+=`
+        <div style="display:flex;flex-direction:column;gap:3px">
+          <label style="font-size:10px;color:var(--tx2);font-weight:bold">${name}抗性</label>
+          <input type="number" class="armorElem" data-idx="${idx}" min="-128" max="127" value="${curElements[idx]}" style="padding:6px 8px;border:1px solid var(--brd);border-radius:6px;background:var(--bg);color:var(--tx);font-size:13px;font-family:'SF Mono',Consolas,monospace">
+        </div>
+      `;
+    });
+
+    // Stat rows (same dynamic list shape as weapons)
+    const armorTypeOptions=Object.entries(armorTypes).map(([t,n])=>`<option value="${t}">${n}</option>`).join('');
+    let statsHtml='';
+    renderStats.forEach((s)=>{
+      statsHtml+=`
+        <div class="armorStatRow" style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end;margin-bottom:8px">
+          <div style="display:flex;flex-direction:column;gap:3px">
+            <label style="font-size:10px;color:var(--tx2);font-weight:bold">效果类型</label>
+            <select class="armorStatType" style="padding:6px 8px;border:1px solid var(--brd);border-radius:6px;background:var(--bg);color:var(--tx);font-size:13px">
+              ${Object.entries(armorTypes).map(([t,n])=>`<option value="${t}" ${parseInt(t)===s.typeCode?'selected':''}>${n}</option>`).join('')}
+            </select>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:3px">
+            <label style="font-size:10px;color:var(--tx2);font-weight:bold">数值</label>
+            <input type="number" class="armorStatValue" min="-32768" max="32767" value="${s.value}" style="padding:6px 8px;border:1px solid var(--brd);border-radius:6px;background:var(--bg);color:var(--tx);font-size:13px;font-family:'SF Mono',Consolas,monospace">
+          </div>
+          <button type="button" class="armorStatDel btn" style="padding:6px 10px;font-size:12px">删除</button>
+        </div>
+      `;
+    });
+    
+    armorSec.innerHTML=`
+      <h3 style="font-size:13px;color:var(--tx2);margin:0 0 8px">防具/饰品编辑</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--brd)">
+        <div style="display:flex;flex-direction:column;gap:3px">
+          <label style="font-size:10px;color:var(--tx2);font-weight:bold">等级</label>
+          <input type="number" id="armorLevel" min="0" max="255" value="${curLevel}" style="padding:6px 8px;border:1px solid var(--brd);border-radius:6px;background:var(--bg);color:var(--tx);font-size:13px;font-family:'SF Mono',Consolas,monospace">
+        </div>
+        <div style="display:flex;flex-direction:column;gap:3px">
+          <label style="font-size:10px;color:var(--tx2);font-weight:bold">种类</label>
+          <select id="armorCategory" style="padding:6px 8px;border:1px solid var(--brd);border-radius:6px;background:var(--bg);color:var(--tx);font-size:13px">
+            <option value="12" ${curCategory===12?'selected':''}>普通防具/饰品</option>
+            <option value="21" ${curCategory===21?'selected':''}>附带技能/特殊</option>
+          </select>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:3px">
+          <label style="font-size:10px;color:var(--tx2);font-weight:bold">谁可以装备</label>
+          <select id="armorWho" style="padding:6px 8px;border:1px solid var(--brd);border-radius:6px;background:var(--bg);color:var(--tx);font-size:13px">
+            <option value="16" ${curWho===16?'selected':''}>张烈</option>
+            <option value="32" ${curWho===32?'selected':''}>玉儿</option>
+            <option value="64" ${curWho===64?'selected':''}>小雪</option>
+            <option value="96" ${curWho===96?'selected':''}>女性</option>
+            <option value="128" ${curWho===128?'selected':''}>靖仇</option>
+            <option value="144" ${curWho===144?'selected':''}>男性</option>
+            <option value="240" ${curWho===240?'selected':''}>所有人</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-bottom:8px;font-size:11px;color:var(--tx2);font-weight:bold">五行抗性（-128~127）</div>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--brd)">
+        ${elemHtml}
+      </div>
+      <div style="margin-bottom:8px;display:flex;align-items:center;gap:8px;font-size:11px;color:var(--tx2)">
+        <label style="display:inline-flex;align-items:center;gap:5px;cursor:pointer">
+          <input type="checkbox" id="armorTrailer" ${curTrailer?'checked':''}>
+          <span style="font-weight:bold">装备时增加属性上限 (1B 00 00 01 尾标)</span>
+        </label>
+        <span style="opacity:.7">勾上后 13/14/15 表示生命/灵力/体力上限 加值；不勾则表示每回合回复%</span>
+      </div>
+      <div style="margin-bottom:8px;font-size:11px;color:var(--tx2);font-weight:bold">装备效果（可增/删/改，支持变长保存）</div>
+      <div id="armorStatList">${statsHtml}</div>
+      <button type="button" id="armorStatAdd" class="btn" style="margin-top:6px;font-size:12px">+ 添加效果</button>
+    `;
+    document.getElementById('fgc').parentNode.insertBefore(armorSec,document.getElementById('fgc').nextSibling);
+
+    // Toggle handler: stage current rows + flag, then re-render so dropdown labels refresh
+    armorSec.querySelector('#armorTrailer').onchange=(ev)=>{
+      // Snapshot whatever the user edited so far before re-rendering
+      if(!mods[e.id])mods[e.id]={};
+      const rows=armorSec.querySelectorAll('.armorStatRow');
+      const stats=[];
+      rows.forEach(row=>{
+        const t=parseInt(row.querySelector('.armorStatType').value,10);
+        const v=parseInt(row.querySelector('.armorStatValue').value,10);
+        if(!isNaN(t)&&!isNaN(v))stats.push({type:t,value:v});
+      });
+      mods[e.id]['armorStats']=stats;
+      mods[e.id]['armorTrailer']=ev.target.checked;
+      openE(e);
+    };
+    
+    // Wire add/del buttons
+    const aList=armorSec.querySelector('#armorStatList');
+    const newArmorRowHtml=()=>`
+      <div class="armorStatRow" style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end;margin-bottom:8px">
+        <div style="display:flex;flex-direction:column;gap:3px">
+          <label style="font-size:10px;color:var(--tx2);font-weight:bold">效果类型</label>
+          <select class="armorStatType" style="padding:6px 8px;border:1px solid var(--brd);border-radius:6px;background:var(--bg);color:var(--tx);font-size:13px">${armorTypeOptions}</select>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:3px">
+          <label style="font-size:10px;color:var(--tx2);font-weight:bold">数值</label>
+          <input type="number" class="armorStatValue" min="-32768" max="32767" value="0" style="padding:6px 8px;border:1px solid var(--brd);border-radius:6px;background:var(--bg);color:var(--tx);font-size:13px;font-family:'SF Mono',Consolas,monospace">
+        </div>
+        <button type="button" class="armorStatDel btn" style="padding:6px 10px;font-size:12px">删除</button>
+      </div>`;
+    armorSec.querySelector('#armorStatAdd').onclick=()=>{
+      aList.insertAdjacentHTML('beforeend',newArmorRowHtml());
+    };
+    armorSec.addEventListener('click',ev=>{
+      if(ev.target.classList.contains('armorStatDel')){
+        ev.target.closest('.armorStatRow').remove();
+      }
+    });
+  }
+  
+  // D0 07 effect data (hidden for recovery, stat increase, magic treasure, weapon, and armor items)
+  const esec=document.getElementById('esec'),egrd=document.getElementById('egrd');egrd.innerHTML='';
+  if(!isRecovery&&!isStatIncrease&&!isMagicTreasure&&!isWeapon&&!isArmor&&e.d007&&e.d007.eff.length>0){
+    esec.style.display='block';
+    document.getElementById('esecTitle').textContent='D0 07 效果数据 - 点击编辑';
+    const effLabels=['等级','?c1','?c2','物品序号','?p4','?p5','?p6','?p7','?p8','?p9','?p10','?p11','?p12','效果A','效果类型','效果B','p16','p17','p18','p19'];
+    const eff=e.d007.eff;const blk=e.d007;
+    const h=document.createElement('div');h.className='section-label';
+    h.textContent=`D0 07 Block (0x${blk.offset.toString(16).toUpperCase()}, ${blk.blen}B, ${eff.length} 字段)`;
+    egrd.appendChild(h);
+    for(let vi=0;vi<eff.length;vi++){
+      const gIdx=20000+vi;
+      const ov=eff[vi];const mv=m[gIdx]!==undefined?m[gIdx]:ov;
+      const ch=m[gIdx]!==undefined&&m[gIdx]!==ov;
+      const isKey=vi===0||vi===3||vi===14||vi===15||(vi>=16&&vi<=22);
+      const d=document.createElement('div');d.className='ei'+(ch?' hl':'')+(isKey?' key':'');
+      const lbl=vi<effLabels.length?effLabels[vi]:`p${vi}`;
+      d.innerHTML=`<div class="el">${lbl}</div><div class="ev">${mv}</div>`;
+      d.title=`eff[${vi}] "${lbl}" (原始: ${ov}, 0x${ov.toString(16).toUpperCase()})`;
+      d.onclick=()=>{
+        const inp=prompt(`修改 ${lbl} (eff[${vi}])\n当前: ${mv}, 原始: ${ov}\n(0-65535)`,mv);
+        if(inp!==null){const nv=parseInt(inp,10);if(!isNaN(nv)&&nv>=0&&nv<=65535){
+          if(!mods[e.id])mods[e.id]={};mods[e.id][gIdx]=nv;openE(e);render();toast(`已修改 ${lbl}: ${ov} -> ${nv}`);
+        }else toast('无效数值',true)}};
+      egrd.appendChild(d);
+    }
+  }else{esec.style.display='none'}
+  
+  // Description
+  const ds=document.getElementById('dsec'),dt=document.getElementById('dtxt');
+  if(e.desc){ds.style.display='block';dt.textContent=e.desc}else ds.style.display='none';
+  
+  // maps.dat description (editable if maps.dat is loaded and item has a valid mapped segment)
+  const mds=document.getElementById('mapDescSec'),mdt=document.getElementById('mapDescText');
+  const segIdx=getDescSegIdx(e);
+  if(mapSegs.length&&segIdx>=0&&segIdx<mapSegs.length){
+    const txt=getDescTextForItem(e)||'';
+    const seg=mapSegs[segIdx];
+    const origLen=seg.end-seg.start;
+    const isMod=mapMods[segIdx]!==undefined;
+    mds.style.display='block';
+    mdt.innerHTML=`
+      <div style="font-size:11px;color:var(--tx2);margin-bottom:4px">段索引: <span style="color:#4fc3f7">${segIdx}</span> (code+200) · 原始字节: <span id="mapDescLimit">${origLen}</span>B${isMod?' · <span style="color:var(--warn)">已修改</span>':''}</div>
+      <textarea id="mapDescEdit" style="width:100%;min-height:60px;padding:8px;border:1px solid var(--brd);border-radius:6px;background:var(--bg);color:var(--tx);font-size:13px;font-family:-apple-system,'Microsoft YaHei','PingFang SC',sans-serif;resize:vertical">${txt.replace(/</g,'&lt;')}</textarea>
+      <div style="font-size:10px;color:var(--tx2);margin-top:4px">
+        当前 big5 字节: <span id="mapDescBytes" style="font-weight:600">-</span> / ${origLen}
+        · maps.dat 是 DOS EXE，每条描述在游戏代码里是<b>硬编码绝对偏移</b>，长度必须保持不变。
+        过短会用 ASCII 空格补齐，过长会拒绝保存。仅支持繁体中文/ASCII (Big5)。
+      </div>
+    `;
+    // Wire up the live byte counter.
+    const ta=document.getElementById('mapDescEdit');
+    const cnt=document.getElementById('mapDescBytes');
+    const update=()=>{
+      const r=encodeBig5(ta.value);
+      if(!r.ok){
+        cnt.textContent=`无法编码 "${r.badChar}"`;
+        cnt.style.color='var(--err,#e57373)';
+        return;
+      }
+      cnt.textContent=String(r.bytes.length);
+      cnt.style.color=r.bytes.length>origLen?'var(--err,#e57373)':(r.bytes.length===origLen?'#4fc3f7':'#81c784');
+    };
+    ta.addEventListener('input',update);
+    update();
+  }else if(MB){
+    mds.style.display='block';
+    mdt.innerHTML=`<div style="color:var(--tx2);font-size:12px">此物品无对应描述段 (segIdx=${segIdx})</div>`;
+  }else{
+    mds.style.display='none';
+  }
+  
+  mo.classList.add('act');
+}
+
+function closeE(){document.getElementById('em').classList.remove('act');EE=null}
+
+function saveE(){
+  if(!EE)return;const e=EE;
+  if(e.isCreature&&e.pairs){
+    const inputs=document.querySelectorAll('#fgc input[data-pidx]');
+    inputs.forEach(el=>{
+      const pidx=parseInt(el.dataset.pidx);const val=parseInt(el.value,10);
+      if(isNaN(val)||val<0||val>65535)return;
+      if(val!==e.pairs[pidx]){if(!mods[e.id])mods[e.id]={};mods[e.id][pidx]=val}
+      else if(mods[e.id]){delete mods[e.id][pidx];if(!Object.keys(mods[e.id]).length)delete mods[e.id]}
+    });
+  }
+  // Handle recovery item simplified interface
+  const isRecovery=e.itemCode>=3001&&e.itemCode<=3024||e.itemCode===3089;
+  const isStatIncrease=e.itemCode>=3035&&e.itemCode<=3044;
+  if(isRecovery||isStatIncrease){
+    const typeEls=document.querySelectorAll('.recovType');
+    const valueEls=document.querySelectorAll('.recovValue');
+    const levelEl=document.getElementById('recovLevel');
+    const priceEl=document.getElementById('recovPrice');
+    if(!mods[e.id])mods[e.id]={};
+    typeEls.forEach((el,idx)=>{
+      const newType=parseInt(el.value,10);
+      const newValue=parseInt(valueEls[idx]?.value||'0',10);
+      if(!isNaN(newType)&&!isNaN(newValue)&&newValue>=0&&newValue<=65535){
+        mods[e.id][`recovType_${idx}`]=newType;
+        mods[e.id][`recovValue_${idx}`]=newValue;
+      }
+    });
+    // Save level and price
+    if(levelEl){
+      const newLevel=parseInt(levelEl.value,10);
+      if(!isNaN(newLevel)&&newLevel>=0&&newLevel<=255){
+        mods[e.id]['recovLevel']=newLevel;
+      }
+    }
+    if(priceEl){
+      const newPrice=parseInt(priceEl.value,10);
+      if(!isNaN(newPrice)&&newPrice>=0&&newPrice<=65535){
+        mods[e.id]['recovPrice']=newPrice;
+      }
+    }
+  }
+  // Handle magic treasure simplified interface
+  const isMagicTreasure=e.itemCode>=3151&&e.itemCode<=3184;
+  if(isMagicTreasure){
+    const levelEl=document.getElementById('magicLevel');
+    const staminaEl=document.getElementById('magicStamina');
+    const effectEl=document.getElementById('magicEffect');
+    const whoEl=document.getElementById('magicWho');
+    const profEl=document.getElementById('magicProficiency');
+    if(!mods[e.id])mods[e.id]={};
+    if(levelEl){
+      const newLevel=parseInt(levelEl.value,10);
+      if(!isNaN(newLevel)&&newLevel>=0&&newLevel<=255){
+        mods[e.id]['magicLevel']=newLevel;
+      }
+    }
+    if(staminaEl){
+      const newStamina=parseInt(staminaEl.value,10);
+      if(!isNaN(newStamina)&&newStamina>=0&&newStamina<=255){
+        mods[e.id]['magicStamina']=newStamina;
+      }
+    }
+    if(effectEl){
+      const newEffect=parseInt(effectEl.value,10);
+      if(!isNaN(newEffect)&&(newEffect===0||newEffect===64)){
+        mods[e.id]['magicEffect']=newEffect;
+      }
+    }
+    if(whoEl){
+      const newWho=parseInt(whoEl.value,10);
+      if(!isNaN(newWho)&&[16,32,64,96,128,144,240].includes(newWho)){
+        mods[e.id]['magicWho']=newWho;
+      }
+    }
+    if(profEl){
+      const hasProficiency=e.d007&&e.d007.raw&&e.d007.raw.length>34&&e.d007.raw[33]===0x0D&&e.d007.raw[34]===0x00;
+      if(hasProficiency){
+        const newProf=parseInt(profEl.value,10);
+        if(!isNaN(newProf)&&newProf>=0&&newProf<=65535){
+          mods[e.id]['magicProficiency']=newProf;
+        }
+      }
+    }
+  }
+  // Handle skill cost value
+  if(e.category==='skill'&&e.skillData){
+    const cvEl=document.getElementById('skillCostValue');
+    if(cvEl){
+      if(!mods[e.id])mods[e.id]={};
+      const newCost=parseInt(cvEl.value,10);
+      if(!isNaN(newCost)&&newCost>=0&&newCost<=4095){
+        mods[e.id]['skillCostValue']=newCost;
+      }
+    }
+    // Save skill effect values from modal
+    if(e.skillData.effects){
+      if(!mods[e.id])mods[e.id]={};
+      e.skillData.effects.forEach((ef,idx)=>{
+        const el=document.getElementById('skillEffM_'+idx);
+        if(el){
+          const v=parseInt(el.value,10);
+          if(!isNaN(v)&&v>=0&&v<=65535)mods[e.id]['skillEff_'+idx]=v;
+        }
+      });
+    }
+  }
+  // Handle weapon simplified interface
+  const isWeapon=e.itemCode>=3201&&e.itemCode<=3256;
+  if(isWeapon){
+    const levelEl=document.getElementById('weaponLevel');
+    const categoryEl=document.getElementById('weaponCategory');
+    const whoEl=document.getElementById('weaponWho');
+    if(!mods[e.id])mods[e.id]={};
+    if(levelEl){
+      const newLevel=parseInt(levelEl.value,10);
+      if(!isNaN(newLevel)&&newLevel>=0&&newLevel<=255){
+        mods[e.id]['weaponLevel']=newLevel;
+      }
+    }
+    if(categoryEl){
+      const newCategory=parseInt(categoryEl.value,10);
+      if(!isNaN(newCategory)&&(newCategory===11||newCategory===21)){
+        mods[e.id]['weaponCategory']=newCategory;
+      }
+    }
+    if(whoEl){
+      const newWho=parseInt(whoEl.value,10);
+      if(!isNaN(newWho)&&[16,32,64,96,128,144,240].includes(newWho)){
+        mods[e.id]['weaponWho']=newWho;
+      }
+    }
+    // Collect dynamic stats list (supports add/delete/reorder)
+    const rows=document.querySelectorAll('.weaponStatRow');
+    const stats=[];
+    rows.forEach(row=>{
+      const t=parseInt(row.querySelector('.weaponStatType').value,10);
+      const v=parseInt(row.querySelector('.weaponStatValue').value,10);
+      if(!isNaN(t)&&!isNaN(v)&&v>=-32768&&v<=32767)stats.push({type:t,value:v});
+    });
+    mods[e.id]['weaponStats']=stats;
+  }
+  // Handle armor/accessory simplified interface (3271-3398)
+  const isArmor=e.itemCode>=3271&&e.itemCode<=3398;
+  if(isArmor){
+    const levelEl=document.getElementById('armorLevel');
+    const categoryEl=document.getElementById('armorCategory');
+    const whoEl=document.getElementById('armorWho');
+    const elemEls=document.querySelectorAll('.armorElem');
+    if(!mods[e.id])mods[e.id]={};
+    if(levelEl){
+      const newLevel=parseInt(levelEl.value,10);
+      if(!isNaN(newLevel)&&newLevel>=0&&newLevel<=255){
+        mods[e.id]['armorLevel']=newLevel;
+      }
+    }
+    if(categoryEl){
+      const newCategory=parseInt(categoryEl.value,10);
+      if(!isNaN(newCategory)&&(newCategory===12||newCategory===21)){
+        mods[e.id]['armorCategory']=newCategory;
+      }
+    }
+    if(whoEl){
+      const newWho=parseInt(whoEl.value,10);
+      if(!isNaN(newWho)&&[16,32,64,96,128,144,240].includes(newWho)){
+        mods[e.id]['armorWho']=newWho;
+      }
+    }
+    elemEls.forEach(el=>{
+      const idx=parseInt(el.dataset.idx,10);
+      const newVal=parseInt(el.value,10);
+      if(!isNaN(newVal)&&newVal>=-128&&newVal<=127){
+        mods[e.id][`armorElem_${idx}`]=newVal;
+      }
+    });
+    const rows=document.querySelectorAll('.armorStatRow');
+    const stats=[];
+    rows.forEach(row=>{
+      const t=parseInt(row.querySelector('.armorStatType').value,10);
+      const v=parseInt(row.querySelector('.armorStatValue').value,10);
+      if(!isNaN(t)&&!isNaN(v)&&v>=-32768&&v<=32767)stats.push({type:t,value:v});
+    });
+    mods[e.id]['armorStats']=stats;
+    // Persist the 1B 00 00 01 trailer flag (regen% vs stat-cap-increase mode)
+    const trailerEl=document.getElementById('armorTrailer');
+    if(trailerEl)mods[e.id]['armorTrailer']=trailerEl.checked;
+  }
+  // Handle creature drop/steal/gold edits
+  if(e.isCreature&&e.creature){
+    if(!mods[e.id])mods[e.id]={};
+    const dIdEl=document.getElementById('creatureDropId');
+    const dPrEl=document.getElementById('creatureDropProb');
+    const sIdEl=document.getElementById('creatureStealId');
+    const sPrEl=document.getElementById('creatureStealProb');
+    const goldEl=document.getElementById('creatureGold');
+    if(dIdEl){const v=parseInt(dIdEl.value,10);if(!isNaN(v))mods[e.id]['creatureDrop_id']=v;}
+    if(dPrEl){const v=parseInt(dPrEl.value,10);if(!isNaN(v)&&v>=0&&v<=65535)mods[e.id]['creatureDrop_prob']=v;}
+    if(sIdEl){const v=parseInt(sIdEl.value,10);if(!isNaN(v))mods[e.id]['creatureSteal_id']=v;}
+    if(sPrEl){const v=parseInt(sPrEl.value,10);if(!isNaN(v)&&v>=0&&v<=65535)mods[e.id]['creatureSteal_prob']=v;}
+    if(goldEl){const v=parseInt(goldEl.value,10);if(!isNaN(v)&&v>=0)mods[e.id]['creatureGold']=v;}
+    // Creature equip stats (fixed fields)
+    const cFixedInputs=document.querySelectorAll('.creatureFixedStat');
+    const cStats=[];
+    cFixedInputs.forEach(el=>{
+      const t=parseInt(el.dataset.type,10);
+      const v=parseInt(el.value,10);
+      if(!isNaN(t)&&!isNaN(v)&&v>=-32768&&v<=32767&&v!==0)cStats.push({type:t,value:v});
+    });
+    mods[e.id]['creatureStats']=cStats;
+    const cTrailerEl=document.getElementById('creatureTrailer');
+    if(cTrailerEl)mods[e.id]['creatureTrailer']=cTrailerEl.checked;
+  }
+  // Handle maps.dat description editing
+  const mdEdit=document.getElementById('mapDescEdit');
+  if(mdEdit&&mapSegs.length){
+    const segIdx=getDescSegIdx(e);
+    if(segIdx>=0&&segIdx<mapSegs.length){
+      const newText=mdEdit.value;
+      const origText=mapDescTexts[segIdx]||'';
+      if(newText===origText){
+        if(mapMods[segIdx]!==undefined)delete mapMods[segIdx];
+      }else{
+        const r=encodeBig5(newText);
+        if(!r.ok){
+          toast(`无法编码字符: "${r.badChar}" (Big5 不支持)`,true);
+          return;
+        }
+        // maps.dat 是 DOS MZ EXE，每条描述在游戏代码里是硬编码的绝对文件偏移。
+        // 一旦长度变化，后面所有描述都会错位（用户实测：罗勒草+1字节 -> 凤尾草液变成 "Q全體..."，
+        // 再往后全部串行）。所以严格限制：新文本的 big5 字节数 ≤ 原字节数；不足时尾部空格补齐。
+        const origLen=mapSegs[segIdx].end-mapSegs[segIdx].start;
+        if(r.bytes.length>origLen){
+          toast(`描述超长 ${r.bytes.length}/${origLen} 字节 (中文按 Big5 占 2 字节)。maps.dat 长度必须保持不变，否则游戏会错位读取。`,true);
+          return;
+        }
+        let padded=r.bytes;
+        if(r.bytes.length<origLen){
+          padded=new Uint8Array(origLen);
+          padded.set(r.bytes,0);
+          padded.fill(0x20,r.bytes.length); // ASCII space padding
+        }
+        mapMods[segIdx]=padded;
+      }
+    }
+  }
+  render();closeE();toast(`已暂存 #${e.id} ${e.name} — 点工具栏「保存」写入文件`);
+}
+
+function resetE(){if(!EE)return;delete mods[EE.id];render();closeE();toast(`已重置 #${EE.id} ${EE.name}`)}
+
+async function saveFile(){
+  if(!FB)return;
+  // Phase 1: build a working copy and apply all NON-length-changing edits (level/who/element/value updates etc.)
+  let nd=new Uint8Array(FB);
+  let dv=new DataView(nd.buffer);
+
+  // IMPORTANT: e.id is the ORIGINAL nms-array index, not the position in entries[].
+  // entries[] may skip slots (no $$ found, itemCode===0 non-equipment, etc.), so
+  // entries[parseInt(eid)] returns the wrong item or undefined — that bug silently
+  // drops every mon.dat write. Always look up by id.
+  const byId=new Map();
+  for(const ent of entries)byId.set(ent.id,ent);
+
+  // Helper: apply scalar/in-place mods (no length change)
+  for(const [eid,ms] of Object.entries(mods)){
+    const e=byId.get(parseInt(eid));if(!e)continue;
+    
+    const isRecovery=e.itemCode>=3001&&e.itemCode<=3024||e.itemCode===3089;
+    const isStatIncrease=e.itemCode>=3035&&e.itemCode<=3044;
+    if((isRecovery||isStatIncrease)&&e.d007){
+      const baseOff=e.d007.offset;
+      const blockEnd=baseOff+e.d007.blen;
+      if(ms['recovLevel']!==undefined){const o=baseOff+9;if(o+1<blockEnd)dv.setUint16(o,ms['recovLevel'],true)}
+      if(ms['recovPrice']!==undefined){const o=baseOff+35;if(o+1<blockEnd)dv.setUint16(o,ms['recovPrice'],true)}
+      const effList=(e.effects&&e.effects.effects)||[];
+      for(let idx=0;idx<effList.length;idx++){
+        const ef=effList[idx];
+        // Prefer the exact byte offset recorded during parsing; fall back to the
+        // legacy flat assumption only if it's somehow missing.
+        const effOff=(typeof ef.off==='number')?(baseOff+ef.off):(baseOff+37+idx*4);
+        if(ms[`recovType_${idx}`]!==undefined){if(effOff+1<blockEnd)dv.setUint16(effOff,ms[`recovType_${idx}`],true)}
+        if(ms[`recovValue_${idx}`]!==undefined){if(effOff+3<blockEnd)dv.setUint16(effOff+2,ms[`recovValue_${idx}`],true)}
+      }
+    }
+    
+    const isMagicTreasure=e.itemCode>=3151&&e.itemCode<=3184;
+    if(isMagicTreasure&&e.d007){
+      const baseOff=e.d007.offset;
+      if(ms['magicLevel']!==undefined){const o=baseOff+9;if(o+1<nd.length)dv.setUint16(o,ms['magicLevel'],true)}
+      if(ms['magicStamina']!==undefined){const o=baseOff+27;if(o<nd.length)nd[o]=ms['magicStamina']}
+      if(ms['magicEffect']!==undefined){const o=baseOff+28;if(o<nd.length)nd[o]=ms['magicEffect']}
+      if(ms['magicWho']!==undefined){const o=baseOff+32;if(o<nd.length)nd[o]=ms['magicWho']}
+      if(ms['magicProficiency']!==undefined){const o=baseOff+35;if(o+1<nd.length)dv.setUint16(o,ms['magicProficiency'],true)}
+    }
+    
+    // skill cost binary write (2 bytes: high nibble = cost type, low 12 bits = value)
+    if(e.category==='skill'&&e.d007){
+      const baseOff=e.d007.offset;
+      if(ms['skillCostValue']!==undefined&&e.skillData){
+        const ct=e.skillData.costType;
+        const cv=ms['skillCostValue']&0xFFF;
+        const word=(ct<<12)|cv;
+        const o=baseOff+27;
+        if(o+1<nd.length)dv.setUint16(o,word,true);
+      }
+      // skill effect value writes
+      if(e.skillData&&e.skillData.effects){
+        e.skillData.effects.forEach((ef,idx)=>{
+          if(ms['skillEff_'+idx]!==undefined){
+            const o=baseOff+ef.off;
+            if(o+1<nd.length)dv.setUint16(o,ms['skillEff_'+idx],true);
+          }
+        });
+      }
+    }
+    
+    // creature drop/steal/gold binary writes
+    if(e.isCreature&&e.creature){
+      const cb=e.creature.blockOffset;
+      if(ms['creatureDrop_id']!==undefined&&cb+55<nd.length)dv.setUint16(cb+54,ms['creatureDrop_id'],true);
+      if(ms['creatureDrop_prob']!==undefined&&cb+57<nd.length)dv.setUint16(cb+56,ms['creatureDrop_prob'],true);
+      if(ms['creatureSteal_id']!==undefined&&cb+59<nd.length)dv.setUint16(cb+58,ms['creatureSteal_id'],true);
+      if(ms['creatureSteal_prob']!==undefined&&cb+61<nd.length)dv.setUint16(cb+60,ms['creatureSteal_prob'],true);
+      if(ms['creatureGold']!==undefined&&cb+65<nd.length)dv.setUint32(cb+62,ms['creatureGold'],true);
+    }
+    // creature pairs / generic eff edits
+    for(const [pidx,nv] of Object.entries(ms)){
+      if(pidx.startsWith('recov')||pidx.startsWith('magic')||pidx.startsWith('weapon')||pidx.startsWith('armor')||pidx.startsWith('creature')||pidx.startsWith('skill'))continue;
+      const pi=parseInt(pidx);
+      if(pi>=20000){
+        const vi=pi-20000;
+        if(e.d007){const o=e.d007.offset+9+vi*2;if(o+1<nd.length)dv.setUint16(o,nv,true)}
+      }else if(e.so!==undefined){
+        const o=e.so+4+pi*2;if(o+1<nd.length)dv.setUint16(o,nv,true);
+      }
+    }
+  }
+  
+  // Phase 2: identify weapon/armor entries with stat-list edits and build new d007 blocks
+  // (these may differ in length from the originals -> need splice)
+  const splices=[]; // {start, end, replacement}
+  for(const [eid,ms] of Object.entries(mods)){
+    const e=byId.get(parseInt(eid));if(!e||!e.d007)continue;
+    const isWeapon=e.itemCode>=3201&&e.itemCode<=3256;
+    const isArmor=e.itemCode>=3271&&e.itemCode<=3398;
+    if(!isWeapon&&!isArmor)continue;
+    
+    const baseOff=e.d007.offset;
+    const oldEnd=baseOff+e.d007.blen;
+    
+    // Build new block content
+    const headerLen=33; // bytes 0..32 from current working buffer
+    const head=nd.slice(baseOff,baseOff+headerLen);
+    
+    // Apply scalar overrides on header copy
+    const dvH=new DataView(head.buffer);
+    if(isWeapon){
+      if(ms['weaponLevel']!==undefined)dvH.setUint16(9,ms['weaponLevel'],true);
+      if(ms['weaponCategory']!==undefined)dvH.setUint16(11,ms['weaponCategory'],true);
+      if(ms['weaponWho']!==undefined)head[32]=ms['weaponWho'];
+    }else{
+      if(ms['armorLevel']!==undefined)dvH.setUint16(9,ms['armorLevel'],true);
+      if(ms['armorCategory']!==undefined)dvH.setUint16(11,ms['armorCategory'],true);
+      if(ms['armorWho']!==undefined)head[32]=ms['armorWho'];
+      for(let i=0;i<5;i++){
+        if(ms[`armorElem_${i}`]!==undefined){
+          const v=ms[`armorElem_${i}`];
+          head[2+i]=v<0?v+256:v;
+        }
+      }
+    }
+    
+    // Build stats body
+    let statBytes;
+    const statsKey=isWeapon?'weaponStats':'armorStats';
+    if(Array.isArray(ms[statsKey])){
+      const stats=ms[statsKey];
+      statBytes=new Uint8Array(stats.length*4);
+      const dvS=new DataView(statBytes.buffer);
+      stats.forEach((s,i)=>{
+        dvS.setUint16(i*4,s.type,true);
+        const v=s.value<0?s.value+65536:s.value;
+        dvS.setUint16(i*4+2,v,true);
+      });
+    }else{
+      // No stats list change — keep the original stat bytes
+      statBytes=nd.slice(baseOff+headerLen,oldEnd-2); // exclude 1E 00
+    }
+    
+    // For armor: handle the optional 1B 00 00 01 trailer that flips the
+    // semantics of stat types 13/14/15 (per-turn % regen vs +max stat).
+    if(isArmor){
+      // Strip any existing 1B 00 00 01 trailer entries from statBytes
+      // (we'll re-append exactly once at the end if the flag is true).
+      const stripped=[];
+      for(let k=0;k+3<statBytes.length;k+=4){
+        if(statBytes[k]===0x1B&&statBytes[k+1]===0x00&&statBytes[k+2]===0x00&&statBytes[k+3]===0x01)continue;
+        stripped.push(statBytes[k],statBytes[k+1],statBytes[k+2],statBytes[k+3]);
+      }
+      statBytes=new Uint8Array(stripped);
+      const trailerFlag=(ms['armorTrailer']!==undefined)?!!ms['armorTrailer']:!!e.d007.armorTrailer;
+      if(trailerFlag){
+        const withTrailer=new Uint8Array(statBytes.length+4);
+        withTrailer.set(statBytes,0);
+        withTrailer[statBytes.length]=0x1B;
+        withTrailer[statBytes.length+1]=0x00;
+        withTrailer[statBytes.length+2]=0x00;
+        withTrailer[statBytes.length+3]=0x01;
+        statBytes=withTrailer;
+      }
+    }
+    
+    // Build new full block: header(33) + stats + 1E 00
+    const newBlock=new Uint8Array(headerLen+statBytes.length+2);
+    newBlock.set(head,0);
+    newBlock.set(statBytes,headerLen);
+    newBlock[headerLen+statBytes.length]=0x1E;
+    newBlock[headerLen+statBytes.length+1]=0x00;
+    
+    splices.push({start:baseOff,end:oldEnd,replacement:newBlock});
+  }
+  
+  // Phase 2b: creature equip effect splices (can change length)
+  for(const [eid,ms] of Object.entries(mods)){
+    const e=byId.get(parseInt(eid));if(!e||!e.isCreature||!e.creature)continue;
+    if(!Array.isArray(ms['creatureStats']))continue;
+    const cb=e.creature.blockOffset;
+    const equipStart=cb+97;
+    const oldBlockEnd=cb+e.creature.blockLen; // includes 1E 00
+    
+    // Build stat bytes from staged list
+    const stats=ms['creatureStats'];
+    let statBytes=new Uint8Array(stats.length*4);
+    const dvS=new DataView(statBytes.buffer);
+    stats.forEach((s,i)=>{
+      dvS.setUint16(i*4,s.type,true);
+      const v=s.value<0?s.value+65536:s.value;
+      dvS.setUint16(i*4+2,v,true);
+    });
+    
+    // Handle trailer flag
+    const trailerFlag=(ms['creatureTrailer']!==undefined)?!!ms['creatureTrailer']:!!e.creature.hasTrailer;
+    if(trailerFlag){
+      const withTrailer=new Uint8Array(statBytes.length+4);
+      withTrailer.set(statBytes,0);
+      withTrailer[statBytes.length]=0x1B;
+      withTrailer[statBytes.length+1]=0x00;
+      withTrailer[statBytes.length+2]=0x00;
+      withTrailer[statBytes.length+3]=0x01;
+      statBytes=withTrailer;
+    }
+    
+    // New block: stat bytes + 1E 00
+    const newBlock=new Uint8Array(statBytes.length+2);
+    newBlock.set(statBytes,0);
+    newBlock[statBytes.length]=0x1E;
+    newBlock[statBytes.length+1]=0x00;
+    
+    splices.push({start:equipStart,end:oldBlockEnd,replacement:newBlock});
+  }
+  
+  // Phase 3: apply splices in order (sorted by start, ascending). They cannot overlap because each is one block.
+  splices.sort((a,b)=>a.start-b.start);
+  if(splices.length){
+    // Compute total new size
+    let totalSize=nd.length;
+    for(const sp of splices){
+      totalSize += sp.replacement.length - (sp.end - sp.start);
+    }
+    const out=new Uint8Array(totalSize);
+    let srcPos=0,dstPos=0;
+    for(const sp of splices){
+      // Copy bytes [srcPos, sp.start) unchanged
+      const unchanged=nd.subarray(srcPos,sp.start);
+      out.set(unchanged,dstPos);
+      dstPos+=unchanged.length;
+      // Write replacement
+      out.set(sp.replacement,dstPos);
+      dstPos+=sp.replacement.length;
+      srcPos=sp.end;
+    }
+    // Tail
+    const tail=nd.subarray(srcPos);
+    out.set(tail,dstPos);
+    nd=out;
+  }
+  
+  const sizeDelta=nd.length-FB.byteLength;
+  await writeBack(monHandle,nd,monName,'mon_modified.dat',`已保存 ${monName}${sizeDelta?` (Δ ${sizeDelta>0?'+':''}${sizeDelta}B)`:''}`);
+  // Sync in-memory buffer so further edits build on the saved bytes
+  FB=nd.buffer.slice(nd.byteOffset,nd.byteOffset+nd.byteLength);
+  entries=parse(FB);mods={};_itemNameMap={};entries.filter(e=>!e.isCreature).forEach(e=>{_itemNameMap[e.itemCode]=e.name});render();
+}
+
+async function writeBack(handle,bytes,origName,fallbackName,successMsg){
+  // Direct write via File System Access API
+  if(handle){
+    try{
+      // Optional backup: always emitted as a plain download to avoid an extra dialog
+      const wantBackup=document.getElementById('bkup')&&document.getElementById('bkup').checked;
+      if(wantBackup){
+        try{
+          const orig=await handle.getFile();
+          const ts=new Date().toISOString().replace(/[:.]/g,'-');
+          const bakName=`${origName}.${ts}.bak`;
+          const blob=new Blob([await orig.arrayBuffer()],{type:'application/octet-stream'});
+          const u=URL.createObjectURL(blob);const a=document.createElement('a');a.href=u;a.download=bakName;a.click();
+          // Defer revocation slightly so the download actually starts
+          setTimeout(()=>URL.revokeObjectURL(u),2000);
+        }catch(err){
+          console.warn('备份失败',err);
+          if(!confirm(`备份失败 (${err.message||err.name||err})。仍要直接覆盖原文件 ${origName} 吗？`)){toast('已取消保存');return}
+        }
+      }
+      // Verify or request permission for write
+      if(handle.queryPermission){
+        let perm=await handle.queryPermission({mode:'readwrite'});
+        if(perm!=='granted'){perm=await handle.requestPermission({mode:'readwrite'})}
+        if(perm!=='granted'){throw new Error('未授予写入权限')}
+      }
+      const w=await handle.createWritable();
+      await w.write(bytes);
+      await w.close();
+      // Verify by reading back
+      try{
+        const verify=await handle.getFile();
+        const vbuf=new Uint8Array(await verify.arrayBuffer());
+        if(vbuf.length!==bytes.length){
+          throw new Error(`磁盘大小 ${vbuf.length} ≠ 写入大小 ${bytes.length}`);
+        }
+        // Spot-check: hash a few sampled byte windows
+        let mismatch=-1;
+        const checkPoints=[0,Math.floor(bytes.length/4),Math.floor(bytes.length/2),Math.floor(bytes.length*3/4),bytes.length-1];
+        for(const p of checkPoints){
+          if(vbuf[p]!==bytes[p]){mismatch=p;break}
+        }
+        if(mismatch>=0){throw new Error(`字节校验失败，偏移 0x${mismatch.toString(16)}`)}
+      }catch(verifyErr){
+        toast(`已写入但校验失败：${verifyErr.message||verifyErr}`,true);
+        return;
+      }
+      toast(`${successMsg} → 已写回 ${origName}`);
+      return;
+    }catch(err){
+      if(err&&err.name==='AbortError'){toast('已取消保存');return}
+      toast(`直接写入失败：${err.message||err}，已切换为下载`,true);
+    }
+  }
+  // Fallback: download
+  const blob=new Blob([bytes],{type:'application/octet-stream'});const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=fallbackName;a.click();URL.revokeObjectURL(url);
+  toast(successMsg+'（已下载副本）');
+}
+
+async function saveMapsFile(){
+  if(!MB||!mapSegs.length){toast('未加载 maps.dat',true);return}
+  const orig=new Uint8Array(MB);
+  // Compute total length
+  let total=0;
+  for(let i=0;i<mapSegs.length;i++){
+    const s=mapSegs[i];
+    const len=mapMods[i]!==undefined?mapMods[i].length:(s.end-s.start);
+    total+=len;
+    if(i<mapSegs.length-1)total+=2; // %Q separator
+  }
+  const out=new Uint8Array(total);
+  let off=0;
+  for(let i=0;i<mapSegs.length;i++){
+    const s=mapSegs[i];
+    if(mapMods[i]!==undefined){
+      out.set(mapMods[i],off);
+      off+=mapMods[i].length;
+    }else{
+      const slc=orig.subarray(s.start,s.end);
+      out.set(slc,off);
+      off+=slc.length;
+    }
+    if(i<mapSegs.length-1){
+      out[off++]=0x25;
+      out[off++]=0x51;
+    }
+  }
+  const modCount=Object.keys(mapMods).length;
+  await writeBack(mapsHandle,out,mapsName,'maps_modified.dat',`已保存 ${mapsName} (${modCount} 处描述修改)`);
+  // Sync in-memory buffer so further edits build on the saved bytes
+  MB=out.buffer.slice(out.byteOffset,out.byteOffset+out.byteLength);
+  const p=parseMaps(MB);mapSegs=p.segs;mapDescTexts=p.texts;mapMods={};render();
+}
+
+function expJSON(){
+  const ex=entries.map(e=>({id:e.id,name:e.name,type:e.isCreature?'creature':e.isEquipment?'equipment':'item',
+    itemCode:e.itemCode,itemLevel:e.itemLevel,effects:e.effects,equipStats:e.equipStats,
+    d007:e.d007?{offset:e.d007.offset,blen:e.d007.blen}:null,
+    desc:e.desc,mods:mods[e.id]||null}));
+  const blob=new Blob([JSON.stringify(ex,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download='mon_data.json';a.click();URL.revokeObjectURL(url);toast('已导出 JSON');
+}
+
+function toast(m,e=false){const t=document.getElementById('toast');t.textContent=m;t.className='toast show'+(e?' err':'');setTimeout(()=>t.className='toast',3e3)}
+
+async function loadMonFromHandle(handle){
+  monHandle=handle;
+  const file=await handle.getFile();
+  monName=file.name;
+  const buf=await file.arrayBuffer();
+  FB=buf;entries=parse(FB);mods={};cp=0;
+  _itemNameMap={};entries.filter(e=>!e.isCreature).forEach(e=>{_itemNameMap[e.itemCode]=e.name});
+  document.getElementById('bs').disabled=false;document.getElementById('be').disabled=false;document.getElementById('batchBtn').disabled=false;
+  render();toast(`已加载 ${monName}，${entries.length} 条`);
+  if(_levelChars.length&&document.getElementById('panelLevel').style.display!=='none')renderLevelTable();
+}
+async function loadMapsFromHandle(handle){
+  mapsHandle=handle;
+  const file=await handle.getFile();
+  mapsName=file.name;
+  const buf=await file.arrayBuffer();
+  MB=buf;const p=parseMaps(MB);mapSegs=p.segs;mapDescTexts=p.texts;mapMods={};
+  document.getElementById('bsm').disabled=false;
+  render();toast(`已加载 ${mapsName}，${mapSegs.length} 段说明`);
+}
+function loadMonFromFile(file){
+  monHandle=null;monName=file.name;
+  const r=new FileReader();
+  r.onload=ev=>{FB=ev.target.result;entries=parse(FB);mods={};cp=0;
+    _itemNameMap={};entries.filter(e=>!e.isCreature).forEach(e=>{_itemNameMap[e.itemCode]=e.name});
+    document.getElementById('bs').disabled=false;document.getElementById('be').disabled=false;document.getElementById('batchBtn').disabled=false;
+    render();toast(`已加载 ${monName}，${entries.length} 条（无写回权限，将以下载方式保存）`);
+    if(_levelChars.length&&document.getElementById('panelLevel').style.display!=='none')renderLevelTable()};
+  r.readAsArrayBuffer(file);
+}
+function loadMapsFromFile(file){
+  mapsHandle=null;mapsName=file.name;
+  const r=new FileReader();
+  r.onload=ev=>{MB=ev.target.result;const p=parseMaps(MB);mapSegs=p.segs;mapDescTexts=p.texts;mapMods={};
+    document.getElementById('bsm').disabled=false;
+    render();toast(`已加载 ${mapsName}，${mapSegs.length} 段说明（无写回权限，将以下载方式保存）`)};
+  r.readAsArrayBuffer(file);
+}
+function legacyPickFile(cb){
+  const inp=document.createElement('input');inp.type='file';inp.accept='.dat';
+  inp.onchange=()=>{if(inp.files[0])cb(inp.files[0])};inp.click();
+}
+document.getElementById('fi').onclick=async()=>{
+  if(hasFSA){
+    try{
+      const [h]=await window.showOpenFilePicker({types:[{description:'mon.dat',accept:{'application/octet-stream':['.dat']}}]});
+      await loadMonFromHandle(h);
+    }catch(err){if(err&&err.name!=='AbortError')toast(`加载失败：${err.message||err}`,true)}
+  }else{
+    legacyPickFile(loadMonFromFile);
+  }
+};
+document.getElementById('fi2').onclick=async()=>{
+  if(hasFSA){
+    try{
+      const [h]=await window.showOpenFilePicker({types:[{description:'maps.dat',accept:{'application/octet-stream':['.dat']}}]});
+      await loadMapsFromHandle(h);
+    }catch(err){if(err&&err.name!=='AbortError')toast(`加载失败：${err.message||err}`,true)}
+  }else{
+    legacyPickFile(loadMapsFromFile);
+  }
+};
+// Directory loading — load all .dat files from a selected directory
+document.getElementById('fiDir').onclick=async()=>{
+  if(!hasFSA||typeof window.showDirectoryPicker!=='function'){
+    toast('当前浏览器不支持目录选择（需 Chrome/Edge）',true);return;
+  }
+  try{
+    const dirH=await window.showDirectoryPicker();
+    let loaded=[];
+    for await(const [name,handle] of dirH){
+      if(handle.kind!=='file')continue;
+      const lname=name.toLowerCase();
+      if(!lname.endsWith('.dat'))continue;
+      if(lname==='mon.dat'){
+        await loadMonFromHandle(handle);loaded.push('mon.dat');
+      }else if(lname==='maps.dat'){
+        await loadMapsFromHandle(handle);loaded.push('maps.dat');
+      }else if(lname==='level.dat'){
+        await loadLevelFromHandle(handle);loaded.push('level.dat');
+      }else{
+        // Try to load as mon.dat if it looks big enough (>100KB), otherwise try maps
+        const f=await handle.getFile();
+        if(f.size>100000&&!FB){
+          await loadMonFromHandle(handle);loaded.push(name+'(→mon)');
+        }else if(f.size>1000&&!MB){
+          await loadMapsFromHandle(handle);loaded.push(name+'(→maps)');
+        }
+      }
+    }
+    if(loaded.length)toast(`目录加载完成: ${loaded.join(', ')}`);
+    else toast('目录中未找到可识别的 .dat 文件',true);
+  }catch(err){if(err&&err.name!=='AbortError')toast(`目录加载失败：${err.message||err}`,true)}
+};
+async function loadLevelFromHandle(handle){
+  levelHandle=handle;
+  const file=await handle.getFile();
+  const buf=await file.arrayBuffer();
+  _levelBuf=buf;
+  _levelChars=parseLevelDat(buf);
+  _levelMods={};
+  _levelCurChar=0;
+  document.getElementById('bsl').disabled=false;
+  toast('已加载 level.dat: '+_levelChars.length+' 个角色');
+  if(document.getElementById('panelLevel').style.display!=='none'){openLevelModal();}
+}
+document.getElementById('bs').onclick=saveFile;document.getElementById('be').onclick=expJSON;document.getElementById('bsm').onclick=saveMapsFile;
+document.getElementById('si').oninput=()=>{cp=0;render()};document.getElementById('tf').onchange=()=>{cp=0;render()};
+document.getElementById('sf').onchange=function(){const v=this.value;sortDir=(v==='code'||v==='level')?-1:1;document.getElementById('sfDir').textContent=sortDir>0?'↑':'↓';cp=0;render()};
+document.getElementById('sfDir').onclick=function(){sortDir=-sortDir;this.textContent=sortDir>0?'↑':'↓';cp=0;render()};
+document.getElementById('bp').onclick=()=>{cp--;render()};document.getElementById('bn').onclick=()=>{cp++;render()};
+document.getElementById('ps').onchange=function(){PS=parseInt(this.value,10);cp=0;render()};
+document.getElementById('bmc').onclick=closeE;document.getElementById('bmr').onclick=resetE;document.getElementById('bms').onclick=saveE;
+document.getElementById('em').onclick=e=>{if(e.target===e.currentTarget)closeE()};
+document.onkeydown=e=>{if(e.key==='Escape'){closeE();closeBatch()}if(e.key==='s'&&(e.ctrlKey||e.metaKey)){e.preventDefault();if(!document.getElementById('bs').disabled)saveFile()}};
+
+// ========== SELECTION LOGIC ==========
+document.getElementById('tb').addEventListener('change',ev=>{
+  if(!ev.target.classList.contains('rowSel'))return;
+  const id=parseInt(ev.target.dataset.id);
+  if(ev.target.checked)_selected.add(id);else _selected.delete(id);
+  updateBatchBtnLabel();
+});
+// Inline equip effect editing in table
+document.getElementById('tb').addEventListener('change',ev=>{
+  if(!ev.target.classList.contains('inlineEq'))return;
+  const eid=parseInt(ev.target.dataset.eid);
+  const e=entries.find(en=>en.id===eid);
+  if(!e||!e.creature)return;
+  // Gather all inlineEq inputs for this creature in the current DOM
+  const inputs=document.querySelectorAll(`.inlineEq[data-eid="${eid}"]`);
+  const stats=[];
+  inputs.forEach(inp=>{
+    const t=parseInt(inp.dataset.ft,10);
+    const v=parseInt(inp.value,10);
+    if(!isNaN(t)&&!isNaN(v)&&v!==0)stats.push({type:t,value:v});
+  });
+  if(!mods[eid])mods[eid]={};
+  mods[eid]['creatureStats']=stats;
+  // Also preserve trailer state
+  if(mods[eid]['creatureTrailer']===undefined)mods[eid]['creatureTrailer']=e.creature.hasTrailer;
+  ev.target.style.borderColor='#f90';
+  // Update dirty indicator
+  const bsBtn=document.getElementById('bs');
+  if(bsBtn&&!bsBtn.disabled)bsBtn.classList.toggle('dirty',Object.keys(mods).length>0);
+  document.getElementById('mc').textContent=Object.keys(mods).length;
+});
+// Inline edit handler for all category-specific fields
+document.getElementById('tb').addEventListener('change',ev=>{
+  if(!ev.target.classList.contains('inlineEdit'))return;
+  const eid=parseInt(ev.target.dataset.eid);
+  const key=ev.target.dataset.key;
+  const val=parseInt(ev.target.value,10);
+  if(isNaN(eid)||!key||isNaN(val))return;
+  if(!mods[eid])mods[eid]={};
+  // Determine storage key type
+  if(/^\d+$/.test(key)){
+    // Creature pair index (numeric key like "3", "4", etc.)
+    mods[eid][parseInt(key)]=val;
+  }else if(key.startsWith('recovValue_')){
+    // Recovery effect value — also sync the type
+    mods[eid][key]=val;
+    const idx=key.replace('recovValue_','');
+    const typeKey=`recovType_${idx}`;
+    if(mods[eid][typeKey]===undefined){
+      // Preserve original type from data-rtype attribute
+      const rtype=parseInt(ev.target.dataset.rtype,10);
+      if(!isNaN(rtype))mods[eid][typeKey]=rtype;
+    }
+  }else{
+    // Direct key: weaponLevel, armorLevel, armorElem_N, magicStamina, magicProficiency, skillCostValue
+    mods[eid][key]=val;
+  }
+  ev.target.style.borderColor='#f90';
+  const bsBtn2=document.getElementById('bs');
+  if(bsBtn2&&!bsBtn2.disabled)bsBtn2.classList.toggle('dirty',Object.keys(mods).length>0);
+  document.getElementById('mc').textContent=Object.keys(mods).length;
+});
+// Inline description editing — writes directly to mapMods (same store as modal desc editor)
+document.getElementById('tb').addEventListener('change',ev=>{
+  if(!ev.target.classList.contains('inlineDesc'))return;
+  const segIdx=parseInt(ev.target.dataset.segidx,10);
+  if(isNaN(segIdx)||segIdx<0||segIdx>=mapSegs.length)return;
+  const newText=ev.target.value;
+  const origSeg=mapSegs[segIdx];
+  const origLen=origSeg.end-origSeg.start;
+  // Encode to Big5
+  const r=encodeBig5(newText);
+  if(!r.ok){
+    toast(`无法编码字符: "${r.badChar}"（不在 Big5 编码范围内）`,true);
+    // Revert to current stored value
+    ev.target.value=getDescTextForItem({itemCode:segIdx-200})||'';
+    return;
+  }
+  // Pad or validate length — maps.dat segments must keep exact original byte length
+  let bytes=r.bytes;
+  if(bytes.length>origLen){
+    toast(`说明超长 ${bytes.length}/${origLen} 字节，已截断`,true);
+    bytes=bytes.slice(0,origLen);
+    // Re-decode truncated for display
+    try{ev.target.value=D.decode(bytes).replace(/\x00/g,'')}catch(e){}
+  }
+  if(bytes.length<origLen){
+    // Pad with 0x00 to match original length
+    const padded=new Uint8Array(origLen);
+    padded.set(bytes,0);
+    bytes=padded;
+  }
+  // Check if it's actually the same as original
+  const origBytes=new Uint8Array(MB).subarray(origSeg.start,origSeg.end);
+  let same=true;
+  for(let i=0;i<origLen;i++){if(bytes[i]!==origBytes[i]){same=false;break;}}
+  if(same){
+    delete mapMods[segIdx];
+    ev.target.style.borderColor='';
+  }else{
+    mapMods[segIdx]=bytes;
+    ev.target.style.borderColor='#f90';
+  }
+  // Update maps.dat dirty indicator
+  const bsmBtn=document.getElementById('bsm');
+  if(bsmBtn&&!bsmBtn.disabled)bsmBtn.classList.toggle('dirty',Object.keys(mapMods).length>0);
+});
+// Inline weapon stat editing
+document.getElementById('tb').addEventListener('change',ev=>{
+  if(!ev.target.classList.contains('inlineWpnStat'))return;
+  const eid=parseInt(ev.target.dataset.eid);
+  if(isNaN(eid))return;
+  // Gather all weapon stat inputs for this entry in the current row
+  const inputs=document.querySelectorAll(`.inlineWpnStat[data-eid="${eid}"]`);
+  const stats=[];
+  inputs.forEach(inp=>{
+    const t=parseInt(inp.dataset.type,10);
+    const v=parseInt(inp.value,10);
+    if(!isNaN(t)&&!isNaN(v))stats.push({type:t,value:v});
+  });
+  if(!mods[eid])mods[eid]={};
+  mods[eid]['weaponStats']=stats;
+  ev.target.style.borderColor='#f90';
+  const bsBtn=document.getElementById('bs');
+  if(bsBtn&&!bsBtn.disabled)bsBtn.classList.toggle('dirty',Object.keys(mods).length>0);
+  document.getElementById('mc').textContent=Object.keys(mods).length;
+});
+// Inline armor stat editing
+document.getElementById('tb').addEventListener('change',ev=>{
+  if(!ev.target.classList.contains('inlineArmStat'))return;
+  const eid=parseInt(ev.target.dataset.eid);
+  if(isNaN(eid))return;
+  const inputs=document.querySelectorAll(`.inlineArmStat[data-eid="${eid}"]`);
+  const stats=[];
+  inputs.forEach(inp=>{
+    const t=parseInt(inp.dataset.type,10);
+    const v=parseInt(inp.value,10);
+    if(!isNaN(t)&&!isNaN(v))stats.push({type:t,value:v});
+  });
+  if(!mods[eid])mods[eid]={};
+  mods[eid]['armorStats']=stats;
+  // Preserve trailer state
+  const e=entries.find(en=>en.id===eid);
+  if(e&&mods[eid]['armorTrailer']===undefined){
+    mods[eid]['armorTrailer']=!!(e.d007&&e.d007.armorTrailer);
+  }
+  ev.target.style.borderColor='#f90';
+  const bsBtn=document.getElementById('bs');
+  if(bsBtn&&!bsBtn.disabled)bsBtn.classList.toggle('dirty',Object.keys(mods).length>0);
+  document.getElementById('mc').textContent=Object.keys(mods).length;
+});
+document.getElementById('thead').addEventListener('change',ev=>{
+  if(ev.target.id!=='selAll')return;
+  // Toggle all creatures in current filtered+paginated view
+  const checkboxes=document.querySelectorAll('.rowSel');
+  checkboxes.forEach(cb=>{
+    const id=parseInt(cb.dataset.id);
+    if(ev.target.checked){_selected.add(id);cb.checked=true}
+    else{_selected.delete(id);cb.checked=false}
+  });
+  updateBatchBtnLabel();
+});
+function updateBatchBtnLabel(){
+  const btn=document.getElementById('batchBtn');
+  if(btn&&!btn.disabled)btn.textContent=_selected.size?`批量修改 (${_selected.size})`:'批量修改';
+}
+
+// ========== BATCH MODIFICATION LOGIC ==========
+const _batchCategories=[
+  {label:'全部',min:0,max:99999},
+  {label:'恢复物品',min:3001,max:3024},
+  {label:'解除状态',min:3025,max:3034},
+  {label:'属性物品',min:3035,max:3044},
+  {label:'特殊物品',min:3045,max:3047},
+  {label:'增强/削弱',min:3048,max:3072},
+  {label:'雨皇花',min:3089,max:3089},
+  {label:'法宝',min:3151,max:3184},
+  {label:'武器',min:3201,max:3256},
+  {label:'投掷',min:3257,max:3267},
+  {label:'防具/饰品',min:3271,max:3398}
+];
+
+function openBatch(){
+  if(!_selected.size){toast('请先勾选要批量修改的活物',true);return}
+  _batchPool=[];
+  document.getElementById('batchModal').classList.add('act');
+  // Populate item category selects (single mode)
+  const catSel=document.getElementById('batchItemCat');
+  catSel.innerHTML=_batchCategories.map((c,i)=>'<option value="'+i+'">'+c.label+'</option>').join('');
+  batchFillItems(0,0);
+  catSel.onchange=()=>batchFillItems(parseInt(catSel.value),0);
+  // Populate random mode category select
+  const rndCatSel=document.getElementById('batchRndCat');
+  rndCatSel.innerHTML=_batchCategories.map((c,i)=>'<option value="'+i+'">'+c.label+'</option>').join('');
+  batchFillRndItems(0);
+  rndCatSel.onchange=()=>batchFillRndItems(parseInt(rndCatSel.value));
+  // Mode radio
+  document.querySelectorAll('input[name="batchMode"]').forEach(r=>{
+    r.onchange=updateBatchUI;
+  });
+  // Add button
+  document.getElementById('batchRndAdd').onclick=batchPoolAdd;
+  // Reset mode to single
+  document.querySelector('input[name="batchMode"][value="single"]').checked=true;
+  renderBatchPool();
+  updateBatchUI();
+}
+function closeBatch(){document.getElementById('batchModal').classList.remove('act')}
+
+function batchFillItems(catIdx,curVal){
+  const sel=document.getElementById('batchItemId');
+  const cat=_batchCategories[catIdx];
+  const allItems=Object.entries(_itemNameMap).sort((a,b)=>parseInt(a[0])-parseInt(b[0]));
+  let html='<option value="0">(无)</option>';
+  allItems.forEach(([code,name])=>{
+    const c=parseInt(code);
+    if(catIdx===0||(c>=cat.min&&c<=cat.max))html+='<option value="'+code+'">'+name+' ('+code+')</option>';
+  });
+  sel.innerHTML=html;
+  sel.value=String(curVal);
+}
+
+function batchFillRndItems(catIdx){
+  const sel=document.getElementById('batchRndItem');
+  const cat=_batchCategories[catIdx];
+  const allItems=Object.entries(_itemNameMap).sort((a,b)=>parseInt(a[0])-parseInt(b[0]));
+  let html='<option value="0">(无)</option>';
+  allItems.forEach(([code,name])=>{
+    const c=parseInt(code);
+    if(catIdx===0||(c>=cat.min&&c<=cat.max))html+='<option value="'+code+'">'+name+' ('+code+')</option>';
+  });
+  sel.innerHTML=html;
+}
+
+function batchPoolAdd(){
+  if(_batchPool.length>=6){toast('最多添加6个物品',true);return}
+  const id=parseInt(document.getElementById('batchRndItem').value)||0;
+  const prob=parseInt(document.getElementById('batchRndProb').value)||0;
+  const name=_itemNameMap[id]||'(无)';
+  if(id===0){toast('请选择一个物品',true);return}
+  _batchPool.push({id,prob,name});
+  renderBatchPool();
+}
+
+function renderBatchPool(){
+  const box=document.getElementById('batchRndList');
+  if(!_batchPool.length){box.innerHTML='<span style="color:var(--tx2)">(尚未添加物品)</span>';return}
+  box.innerHTML=_batchPool.map((item,i)=>
+    '<div style="display:flex;align-items:center;gap:6px;padding:2px 0;border-bottom:1px solid var(--brd)">'+
+    '<span style="flex:1">'+item.name+' ('+item.id+') — 几率 '+item.prob+'/256</span>'+
+    '<button class="btn" style="padding:1px 6px;font-size:11px" onclick="_batchPool.splice('+i+',1);renderBatchPool()">×</button></div>'
+  ).join('');
+}
+
+function getBatchTargets(){
+  return entries.filter(e=>e.isCreature&&_selected.has(e.id));
+}
+
+function updateBatchUI(){
+  const field=document.getElementById('batchField').value;
+  const isItemField=field==='drop'||field==='steal';
+  const mode=document.querySelector('input[name="batchMode"]:checked').value;
+  // Mode box visibility: only for item fields
+  document.getElementById('batchModeBox').style.display=isItemField?'block':'none';
+  // Single box
+  const singleBox=document.getElementById('batchSingleBox');
+  const randomBox=document.getElementById('batchRandomBox');
+  if(!isItemField){
+    singleBox.style.display='block';
+    randomBox.style.display='none';
+    document.getElementById('batchItemSelBox').style.display='none';
+    document.getElementById('batchNumVal').style.display='block';
+    document.getElementById('batchNumVal').max='4294967295';
+  }else if(mode==='single'){
+    singleBox.style.display='block';
+    randomBox.style.display='none';
+    document.getElementById('batchItemSelBox').style.display='flex';
+    document.getElementById('batchNumVal').style.display='none';
+  }else{
+    singleBox.style.display='none';
+    randomBox.style.display='block';
+  }
+  // Preview
+  const targets=getBatchTargets();
+  document.getElementById('batchPreview').textContent='将影响 '+targets.length+' 个已选活物';
+}
+
+function applyBatch(){
+  const targets=getBatchTargets();
+  if(!targets.length){toast('没有匹配的活物',true);return}
+  const field=document.getElementById('batchField').value;
+  const mode=document.querySelector('input[name="batchMode"]:checked').value;
+  let count=0;
+  if(field==='drop'||field==='steal'){
+    const idKey=field==='drop'?'creatureDrop_id':'creatureSteal_id';
+    const probKey=field==='drop'?'creatureDrop_prob':'creatureSteal_prob';
+    const fieldName=field==='drop'?'掉落':'偷取';
+    if(mode==='random'){
+      if(!_batchPool.length){toast('请先添加至少一个物品到随机池',true);return}
+      for(const e of targets){
+        const pick=_batchPool[Math.floor(Math.random()*_batchPool.length)];
+        if(!mods[e.id])mods[e.id]={};
+        mods[e.id][idKey]=pick.id;
+        mods[e.id][probKey]=pick.prob;
+        count++;
+      }
+      render();closeBatch();
+      toast('已随机分配 '+count+' 个活物的'+fieldName+' (从 '+_batchPool.length+' 个物品中随机)');
+    }else{
+      const newId=parseInt(document.getElementById('batchItemId').value)||0;
+      const newProb=parseInt(document.getElementById('batchProbVal').value);
+      if(isNaN(newProb)||newProb<0){toast('请输入有效几率',true);return}
+      for(const e of targets){
+        if(!mods[e.id])mods[e.id]={};
+        mods[e.id][idKey]=newId;
+        mods[e.id][probKey]=newProb;
+        count++;
+      }
+      const itemName=_itemNameMap[newId]||'(无)';
+      render();closeBatch();
+      toast('已批量修改 '+count+' 个活物的'+fieldName+' → '+itemName+' (几率 '+newProb+'/256)');
+    }
+  }else{
+    const newVal=parseInt(document.getElementById('batchNumVal').value);
+    if(isNaN(newVal)||newVal<0){toast('请输入有效数值',true);return}
+    for(const e of targets){
+      if(!mods[e.id])mods[e.id]={};
+      mods[e.id]['creatureGold']=newVal;
+      count++;
+    }
+    render();closeBatch();
+    toast('已批量修改 '+count+' 个活物的金钱 → '+newVal);
+  }
+}
+
+document.getElementById('batchBtn').onclick=openBatch;
+document.getElementById('batchCancel').onclick=closeBatch;
+document.getElementById('batchModal').onclick=e=>{if(e.target===e.currentTarget)closeBatch()};
+document.getElementById('batchApply').onclick=applyBatch;
+document.getElementById('batchField').onchange=updateBatchUI;
+
+// ===== level.dat support =====
+let _levelBuf=null; // ArrayBuffer of level.dat
+let _levelChars=[]; // [{start, levels:[{offset,size}]}]
+let _levelMods={}; // {charIdx:{lvlIdx:{field:value}}}
+let _levelCurChar=0;
+
+function parseLevelDat(buf){
+  const d=new Uint8Array(buf);
+  const chars=[];
+  let i=0x848; // known data start (after header+offset tables+separator)
+  while(i+30<=d.length){
+    const charStart=i;
+    const levels=[];
+    while(i+30<=d.length){
+      const hdr=d[i]|d[i+1]<<8|d[i+2]<<16|d[i+3]<<24;
+      if(hdr!==5)break;
+      const hp=d[i+4]|d[i+5]<<8;
+      if(hp<10)break; // padding region
+      let size=30;
+      if(i+34<=d.length && d[i+30]===1 && d[i+31]===0){
+        // check next entry validity
+        if(i+34+5<d.length){
+          const nh=d[i+34]|d[i+35]<<8|d[i+36]<<16|d[i+37]<<24;
+          const nhp=d[i+38]|d[i+39]<<8;
+          if(nh===5&&nhp>=10)size=34;
+        }
+      }
+      levels.push({offset:i,size});
+      i+=size;
+    }
+    if(levels.length)chars.push({start:charStart,levels});
+    else break;
+    // skip padding
+    let found=false;
+    while(i+6<=d.length){
+      const h=d[i]|d[i+1]<<8|d[i+2]<<16|d[i+3]<<24;
+      const hp=d[i+4]|d[i+5]<<8;
+      if(h===5&&hp>=10){found=true;break}
+      i+=2;
+    }
+    if(!found)break;
+  }
+  return chars;
+}
+
+function readLevelEntry(d,offset,size){
+  const o=offset;
+  return {
+    hp:d[o+4]|d[o+5]<<8,
+    mp:d[o+6]|d[o+7]<<8,
+    sp:d[o+8]|d[o+9]<<8,
+    str:d[o+10]|d[o+11]<<8,
+    end:d[o+12]|d[o+13]<<8,
+    int:d[o+14]|d[o+15]<<8,
+    agi:d[o+16]|d[o+17]<<8,
+    debuff:d[o+22]|d[o+23]<<8,
+    buff:d[o+24]|d[o+25]<<8,
+    exp:d[o+26]|d[o+27]<<8,
+    hasSkill:size===34,
+    skillId:size===34?(d[o+32]|d[o+33]<<8):0
+  };
+}
+
+function loadLevelDat(){
+  const inp=document.createElement('input');
+  inp.type='file';inp.accept='.dat';
+  inp.onchange=e=>{
+    const f=e.target.files[0];if(!f)return;
+    f.arrayBuffer().then(buf=>{
+      _levelBuf=buf;
+      _levelChars=parseLevelDat(buf);
+      _levelMods={};
+      _levelCurChar=0;
+      document.getElementById('bsl').disabled=false;
+      toast('已加载 level.dat: '+_levelChars.length+' 个角色');
+      openLevelModal();
+    });
+  };
+  inp.click();
+}
+
+function openLevelModal(){
+  if(!_levelChars.length){toast('请先加载 level.dat',true);return}
+  switchTab('level');
+  renderLevelTabs();
+  renderLevelTable();
+  document.getElementById('levelStatus').textContent=_levelChars.length+' 个角色已加载';
+  if(!Object.keys(_itemNameMap).length)toast('提示：加载 mon.dat 后可显示奇术名称');
+}
+
+function renderLevelTabs(){
+  const charNames=['陈靖仇','于小雪','拓拔玉儿','张烈'];
+  const box=document.getElementById('levelCharTabs');
+  box.innerHTML=_levelChars.map((ch,i)=>{
+    const startLv=61-ch.levels.length;
+    const name=charNames[i]||('角色'+(i+1));
+    return '<button class="btn'+(i===_levelCurChar?' pri':'')+'" style="padding:4px 10px;font-size:12px" data-ci="'+i+'">'+name+' (L'+startLv+'-60)</button>';
+  }).join('');
+  box.onclick=e=>{
+    const btn=e.target.closest('[data-ci]');
+    if(!btn)return;
+    _levelCurChar=parseInt(btn.dataset.ci);
+    renderLevelTabs();
+    renderLevelTable();
+  };
+}
+
+function renderLevelTable(){
+  const d=new Uint8Array(_levelBuf);
+  const ch=_levelChars[_levelCurChar];
+  const tbody=document.getElementById('levelTbody');
+  const mods=_levelMods[_levelCurChar]||{};
+  let html='';
+  const fields=['hp','mp','sp','str','end','int','agi','debuff','buff','exp'];
+  const startLv=61-ch.levels.length;
+  for(let li=0;li<ch.levels.length;li++){
+    const lv=ch.levels[li];
+    const entry=readLevelEntry(d,lv.offset,lv.size);
+    const m=mods[li]||{};
+    html+='<tr>';
+    html+='<td class="num">'+(startLv+li)+'</td>';
+    for(const f of fields){
+      const val=m[f]!==undefined?m[f]:entry[f];
+      const modified=m[f]!==undefined&&m[f]!==entry[f];
+      html+='<td><input type="number" min="0" max="65535" value="'+val+'" data-li="'+li+'" data-f="'+f+'" style="border-color:'+(modified?'#f90':'var(--brd)')+'"></td>';
+    }
+    // Skill column
+    if(entry.hasSkill){
+      const skillVal=m.skillId!==undefined?m.skillId:entry.skillId;
+      const skillName=_itemNameMap[skillVal]||('0x'+skillVal.toString(16).toUpperCase());
+      const skillMod=m.skillId!==undefined&&m.skillId!==entry.skillId;
+      const hasSkillMap=Object.keys(_itemNameMap).some(k=>parseInt(k)>=6001);
+      if(hasSkillMap){
+        // Select mode: show dropdown with all skills from _itemNameMap (code>=6001)
+        let opts='<option value="0">(无)</option>';
+        Object.entries(_itemNameMap).filter(([k])=>parseInt(k)>=6001).sort((a,b)=>parseInt(a[0])-parseInt(b[0])).forEach(([code,name])=>{
+          opts+='<option value="'+code+'"'+(parseInt(code)===skillVal?' selected':'')+'>'+name+' ('+code+')</option>';
+        });
+        html+='<td><select data-li="'+li+'" data-f="skillId" style="padding:2px 4px;font-size:11px;border:1px solid '+(skillMod?'#f90':'var(--brd)')+';border-radius:4px;background:var(--bg);color:var(--tx);max-width:140px">'+opts+'</select></td>';
+      }else{
+        // Input mode: no mon.dat loaded, allow manual number input
+        html+='<td><input type="number" min="0" max="65535" value="'+skillVal+'" data-li="'+li+'" data-f="skillId" style="border-color:'+(skillMod?'#f90':'var(--brd)')+'" title="'+skillName+'"><span style="font-size:10px;color:var(--tx2);margin-left:2px">'+skillName+'</span></td>';
+      }
+    }else{
+      html+='<td style="color:var(--tx2);font-size:11px">—</td>';
+    }
+    html+='</tr>';
+  }
+  tbody.innerHTML=html;
+}
+
+function handleLevelInput(e){
+  const tag=e.target.tagName;
+  if((tag!=='INPUT'&&tag!=='SELECT')||!e.target.dataset.li)return;
+  const li=parseInt(e.target.dataset.li);
+  const f=e.target.dataset.f;
+  const val=parseInt(e.target.value);
+  if(isNaN(val)||val<0)return;
+  if(!_levelMods[_levelCurChar])_levelMods[_levelCurChar]={};
+  if(!_levelMods[_levelCurChar][li])_levelMods[_levelCurChar][li]={};
+  _levelMods[_levelCurChar][li][f]=val;
+  // Update border color
+  e.target.style.borderColor='#f90';
+  // Update skill name tooltip if skillId changed (input mode only)
+  if(f==='skillId'&&tag==='INPUT'){
+    const name=_itemNameMap[val]||('0x'+val.toString(16).toUpperCase());
+    e.target.title=name;
+    const span=e.target.nextElementSibling;
+    if(span)span.textContent=name;
+  }
+}
+
+function saveLevelMods(){
+  if(!_levelBuf){toast('没有加载 level.dat',true);return}
+  const d=new Uint8Array(_levelBuf.slice(0)); // work on copy
+  let modCount=0;
+  for(const ci in _levelMods){
+    const ch=_levelChars[parseInt(ci)];
+    const charMods=_levelMods[ci];
+    for(const li in charMods){
+      const lv=ch.levels[parseInt(li)];
+      const m=charMods[li];
+      const o=lv.offset;
+      if(m.hp!==undefined){d[o+4]=m.hp&0xFF;d[o+5]=(m.hp>>8)&0xFF}
+      if(m.mp!==undefined){d[o+6]=m.mp&0xFF;d[o+7]=(m.mp>>8)&0xFF}
+      if(m.sp!==undefined){d[o+8]=m.sp&0xFF;d[o+9]=(m.sp>>8)&0xFF}
+      if(m.str!==undefined){d[o+10]=m.str&0xFF;d[o+11]=(m.str>>8)&0xFF}
+      if(m.end!==undefined){d[o+12]=m.end&0xFF;d[o+13]=(m.end>>8)&0xFF}
+      if(m.int!==undefined){d[o+14]=m.int&0xFF;d[o+15]=(m.int>>8)&0xFF}
+      if(m.agi!==undefined){d[o+16]=m.agi&0xFF;d[o+17]=(m.agi>>8)&0xFF}
+      if(m.debuff!==undefined){d[o+22]=m.debuff&0xFF;d[o+23]=(m.debuff>>8)&0xFF}
+      if(m.buff!==undefined){d[o+24]=m.buff&0xFF;d[o+25]=(m.buff>>8)&0xFF}
+      if(m.exp!==undefined){d[o+26]=m.exp&0xFF;d[o+27]=(m.exp>>8)&0xFF}
+      if(m.skillId!==undefined&&lv.size===34){d[o+32]=m.skillId&0xFF;d[o+33]=(m.skillId>>8)&0xFF}
+      modCount++;
+    }
+  }
+  _levelBuf=d.buffer;
+  toast('已暂存 '+modCount+' 条等级修改');
+  renderLevelTable();
+}
+
+function downloadLevelDat(){
+  if(!_levelBuf){toast('没有加载 level.dat',true);return}
+  // Apply mods to a copy first
+  const d=new Uint8Array(_levelBuf.slice(0));
+  for(const ci in _levelMods){
+    const ch=_levelChars[parseInt(ci)];
+    const charMods=_levelMods[ci];
+    for(const li in charMods){
+      const lv=ch.levels[parseInt(li)];
+      const m=charMods[li];
+      const o=lv.offset;
+      if(m.hp!==undefined){d[o+4]=m.hp&0xFF;d[o+5]=(m.hp>>8)&0xFF}
+      if(m.mp!==undefined){d[o+6]=m.mp&0xFF;d[o+7]=(m.mp>>8)&0xFF}
+      if(m.sp!==undefined){d[o+8]=m.sp&0xFF;d[o+9]=(m.sp>>8)&0xFF}
+      if(m.str!==undefined){d[o+10]=m.str&0xFF;d[o+11]=(m.str>>8)&0xFF}
+      if(m.end!==undefined){d[o+12]=m.end&0xFF;d[o+13]=(m.end>>8)&0xFF}
+      if(m.int!==undefined){d[o+14]=m.int&0xFF;d[o+15]=(m.int>>8)&0xFF}
+      if(m.agi!==undefined){d[o+16]=m.agi&0xFF;d[o+17]=(m.agi>>8)&0xFF}
+      if(m.debuff!==undefined){d[o+22]=m.debuff&0xFF;d[o+23]=(m.debuff>>8)&0xFF}
+      if(m.buff!==undefined){d[o+24]=m.buff&0xFF;d[o+25]=(m.buff>>8)&0xFF}
+      if(m.exp!==undefined){d[o+26]=m.exp&0xFF;d[o+27]=(m.exp>>8)&0xFF}
+      if(m.skillId!==undefined&&lv.size===34){d[o+32]=m.skillId&0xFF;d[o+33]=(m.skillId>>8)&0xFF}
+    }
+  }
+  if(document.getElementById('bkup').checked){
+    const bk=new Blob([_levelBuf],{type:'application/octet-stream'});
+    const a2=document.createElement('a');a2.href=URL.createObjectURL(bk);
+    a2.download='level.dat.bak';a2.click();URL.revokeObjectURL(a2.href);
+  }
+  const blob=new Blob([d.buffer],{type:'application/octet-stream'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='level.dat';a.click();URL.revokeObjectURL(a.href);
+  toast('已保存 level.dat');
+}
+
+document.getElementById('fi3').onclick=loadLevelDat;
+document.getElementById('bsl').onclick=downloadLevelDat;
+document.getElementById('levelSave').onclick=saveLevelMods;
+document.getElementById('levelTbody').addEventListener('change',handleLevelInput);
+
+// Tab switching
+document.getElementById('tabMon').onclick=()=>{switchTab('mon')};
+document.getElementById('tabLevel').onclick=()=>{switchTab('level')};
+function switchTab(tab){
+  document.getElementById('tabMon').classList.toggle('active',tab==='mon');
+  document.getElementById('tabLevel').classList.toggle('active',tab==='level');
+  document.getElementById('panelMon').style.display=tab==='mon'?'':'none';
+  document.getElementById('panelLevel').style.display=tab==='level'?'':'none';
+}
+</script></body></html>
