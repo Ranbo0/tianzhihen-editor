@@ -2405,7 +2405,7 @@ document.getElementById('fiDir').onclick=async()=>{
   try{
     const dirH=await window.showDirectoryPicker();
     let loaded=[];
-    for await(const [name,handle] of dirH){
+    for await(const [name,handle] of dirH.entries()){
       if(handle.kind!=='file')continue;
       const lname=name.toLowerCase();
       if(!lname.endsWith('.dat'))continue;
@@ -2867,7 +2867,7 @@ function loadLevelDat(){
       _levelCurChar=0;
       document.getElementById('bsl').disabled=false;
       toast('已加载 level.dat: '+_levelChars.length+' 个角色');
-      openLevelModal();
+      switchTab('level');
     });
   };
   inp.click();
@@ -2875,7 +2875,6 @@ function loadLevelDat(){
 
 function openLevelModal(){
   if(!_levelChars.length){toast('请先加载 level.dat',true);return}
-  switchTab('level');
   renderLevelTabs();
   renderLevelTable();
   document.getElementById('levelStatus').textContent=_levelChars.length+' 个角色已加载';
@@ -3042,5 +3041,8 @@ function switchTab(tab){
   document.getElementById('tabLevel').classList.toggle('active',tab==='level');
   document.getElementById('panelMon').style.display=tab==='mon'?'':'none';
   document.getElementById('panelLevel').style.display=tab==='level'?'':'none';
+  if(tab==='level'&&_levelChars.length)openLevelModal();
 }
-</script></body></html>
+</script>
+<footer style="position:fixed;bottom:0;left:0;right:0;text-align:center;padding:6px 12px;background:linear-gradient(90deg,#1a1a2e,#16213e,#0f3460);color:#e0e0e0;font-size:12px;letter-spacing:1px;z-index:9999;border-top:1px solid #334;box-shadow:0 -2px 8px rgba(0,0,0,0.3)">© 2026 曹行宇 (Ranbo0) — 天之痕 mon.dat 编辑器 | <a href="https://github.com/Ranbo0/tianzhihen-editor" style="color:#64b5f6;text-decoration:none" target="_blank">GitHub</a></footer>
+</body></html>
